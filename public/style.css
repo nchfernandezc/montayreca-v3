@@ -20,6 +20,68 @@ background-position: center;
 }
 /* From */
 /* From */
+
+
+
+.form-container {
+  background: #fff;
+  padding: 30px;
+  border-radius: 5px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.input_box {
+  margin-bottom: 50px;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  width: calc(100% - 22px);
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-top: 40px;
+  display: inline-block;
+  vertical-align: top;
+  font-size: 18px;
+}
+
+textarea {
+  height: 150px; /* Ajusta la altura del textarea según sea necesario */
+  margin-bottom: 15px; /* Ajusta el margen inferior del textarea */
+}
+
+button[type="submit"] {
+  width: calc(100% - 22px);
+  padding: 15px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: top;
+  font-size: 18px;
+  margin-top: 10px; /* Agrega un margen superior al botón */
+}
+
+#bandejaEntrada {
+  position: fixed;
+  top: 0;
+  left: -300px; /* La bandeja está inicialmente fuera de la pantalla */
+  width: 300px;
+  height: 100%;
+  background-color: white;
+  transition: left 0.5s;
+  overflow-y: scroll; /* Agrega scroll si la bandeja se llena de mensajes */
+  z-index: 1000; /* Asegúrate de que la bandeja esté por encima del resto del contenido */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Agrega una sombra ligera */
+}
+
+
 .form_container {
   position: absolute;
   max-width: 320px;

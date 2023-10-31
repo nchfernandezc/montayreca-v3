@@ -43,7 +43,11 @@
 					</ul>
 					-->
 					<ul class="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
-						<button onclick="openForm()" class="open-form-button" style="background: none; border: none; padding: 0; cursor: pointer;"><img src="images/user.svg" style="width: 24px; height: 24px;"></button>
+						<button onclick="openForm()" class="open-form-button" style="background: none; border: none; padding: 0; margin-right: 10px; cursor: pointer;">
+							<img src="images/user.svg" style="width: 24px; height: 24px;">
+						  </button>						  
+						  <button class="btn btn-primary" id="solicitarButton" style="display: none;" onclick="openRequestForm()">Solicitar</button>
+						  <button class="btn btn-primary" id="bandejaButton" style="display: none;">Bandeja</button>
 					</ul>
 				</div>
 			</div>
@@ -98,7 +102,7 @@
 				</form>
 				<div class="toggle-btn" onclick="toggleForm()">¿Aún no tienes cuenta? Regístrate aquí</div>
 			  </div>
-			  <div id="register-form" class="register-form" style="display: none;">
+			  <div id="register-form" class="registerForm" style="display: none;">
 				<p>¿Todavía no estás registrado? Regístrate aquí</p>
 				<form action="/register" method="POST" onsubmit="return validateForm()">
 				  <div class="input_box">
@@ -126,6 +130,49 @@
 			  </div>
 			</div>
 		  </div>  
+
+		
+		  
+		  <div id="overlay-request" class="overlay" style="display: none;">
+			<div class="form-container">
+				<div class="close-btn" onclick="closeRequestForm()">X</div>
+				<h2>Formulario de Requerimientos</h2>
+				<div id="request-form">
+					<p>Por favor complete los detalles del requerimiento:</p>
+					<form action="/submit_request" method="POST" onsubmit="hideForm()">
+						<div class="input_box">
+							<input name="id" type="text" placeholder="ID" required />
+							<i class="uil uil-id-badge"></i>
+						</div>
+						<div class="input_box">
+							<input name="fecha" type="date" required />
+							<i class="uil uil-calendar-alt"></i>
+						</div>
+						<div class="input_box">
+							<select name="tipo_de_requerimiento" required>
+								<option value="" disabled selected>Seleccione el tipo de requerimiento</option>
+								<option value="Solicitud de servicio">Solicitud de servicio</option>
+								<option value="Reclamo">Reclamo</option>
+								<option value="Consulta">Consulta</option>
+								<option value="Otro">Otro</option>
+							</select>
+							<i class="uil uil-list-ul"></i>
+						</div>
+						<div class="input_box">
+							<textarea name="descripcion" placeholder="Descripción" required></textarea>
+							<i class="uil uil-comment-alt-lines"></i>
+						</div>
+						<div class="input_box">
+							<textarea name="nota" placeholder="Nota"></textarea>
+							<i class="uil uil-sticky-note"></i>
+						</div>
+						<br>
+						<button type="submit" class="btn btn-primary" onclick="submitForm()">Enviar Requerimiento</button>
+					</form>
+				</div>
+			</div>
+		</div>
+
 
 		<!-- Start Product Section -->
 		<div class="product-section">
@@ -490,3 +537,62 @@
 	  return true;
 	}
   </script>
+
+<!-- ... Tu código HTML ... -->
+<!-- ... Tu código HTML ... -->
+
+<script>
+	function submitForm(event) {
+	  event.preventDefault(); // Previene el comportamiento predeterminado del evento de envío
+	  // Código para enviar la solicitud al servidor aquí
+	  // En el caso de una respuesta exitosa, muestra el mensaje en el formulario y habilita el botón adicional
+	  fetch('/authenticate', {
+		method: 'POST',
+		headers: {
+		  'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+		  username: document.querySelector('input[name="username"]').value,
+		  password: document.querySelector('input[name="password"]').value,
+		}),
+	  })
+		.then((response) => {
+		  if (response.ok) {
+			document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
+			document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
+			document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
+		  } else {
+			throw new Error('Autenticación fallida');
+		  }
+		})
+		.catch((error) => {
+		  console.error('Error:', error);
+		});
+	}
+  
+	// Obtén el formulario y agrega un evento de envío que llame a submitForm
+	const form = document.querySelector('form');
+	form.addEventListener('submit', submitForm);
+  </script>
+  
+  <!-- ... El resto de tu HTML ... -->
+  
+  <!-- ... El resto de tu HTML ... -->
+  
+  <script>
+    function openRequestForm() {
+        var requestForm = document.getElementById('overlay-request');
+        requestForm.style.display = 'flex';
+    }
+
+    function closeRequestForm() {
+        var requestForm = document.getElementById('overlay-request');
+        requestForm.style.display = 'none';
+    }
+
+    function submitRequest() {
+        // Aquí puedes agregar lógica para enviar la solicitud al servidor
+    }
+</script>
+
+
