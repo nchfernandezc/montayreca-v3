@@ -76,22 +76,34 @@ app.post('/authenticate', async (req, res, next) => {
   
   app.post('/submit_request', (req, res) => {
     try {
-      const { id, fecha, tipo_de_requerimiento, descripcion, nota } = req.body;
-      const sql = 'INSERT INTO solicitud (id, fecha, tipo_de_requerimiento, descripcion, nota) VALUES (?, ?, ?, ?, ?)';
-      connection.query(sql, [id, fecha, tipo_de_requerimiento, descripcion, nota], (err, result) => {
-        if (err) {
-          console.error('Error al insertar los datos en la tabla de solicitud:', err);
-          res.status(500).json({ error: 'Error al enviar el formulario de requerimientos. Por favor, inténtelo de nuevo más tarde.' });
-        } else {
-          console.log('Datos insertados correctamente en la tabla de solicitud');
-          res.status(200).json({ message: 'El formulario de requerimientos se ha enviado correctamente' });
-        }
-      });
+        const { id, fecha, tipo_de_requerimiento, descripcion, nota } = req.body;
+        const sql = 'INSERT INTO solicitud (id, fecha, tipo_de_requerimiento, descripcion, nota) VALUES (?, ?, ?, ?, ?)';
+        connection.query(sql, [id, fecha, tipo_de_requerimiento, descripcion, nota], (err, result) => {
+            if (err) {
+                console.error('Error al insertar los datos en la tabla de solicitud:', err);
+                res.status(500).json({ error: 'Error al enviar el formulario de requerimientos. Por favor, inténtelo de nuevo más tarde.' });
+            } else {
+                console.log('Datos insertados correctamente en la tabla de solicitud');
+
+                // Ahora obtenemos el ID del formulario insertado y lo asignamos a formId
+                connection.query('SELECT id FROM solicitud WHERE id = ?', [id], (err, result) => {
+                    if (err) {
+                        console.error('Error al obtener el ID del formulario:', err);
+                    } else {
+                        const formId = result[0].id; // Suponiendo que 'result' es un array con un solo elemento
+                        // Aquí puedes devolver el formId o realizar otras acciones con él
+
+                        res.status(200).json({ formId: formId, message: 'El formulario de requerimientos se ha enviado correctamente' });
+                    }
+                });
+            }
+        });
     } catch (error) {
-      console.error('Error al manejar el formulario de requerimientos:', error);
-      res.status(500).json({ error: 'Error al manejar el formulario de requerimientos. Por favor, inténtelo de nuevo más tarde.' });
+        console.error('Error al manejar el formulario de requerimientos:', error);
+        res.status(500).json({ error: 'Error al manejar el formulario de requerimientos. Por favor, inténtelo de nuevo más tarde.' });
     }
-  });
+});
+
   
 
 app.listen(3000, () => {

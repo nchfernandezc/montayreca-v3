@@ -47,7 +47,8 @@
 							<img src="images/user.svg" style="width: 24px; height: 24px;">
 						  </button>						  
 						  <button class="btn btn-primary" id="solicitarButton" style="display: none;" onclick="openRequestForm()">Solicitar</button>
-						  <button class="btn btn-primary" id="bandejaButton" style="display: none;">Bandeja</button>
+						  <button class="btn btn-primary" id="bandejaButton" style="display: none;"
+						  onclick="openBandeja()">Bandeja</button>						  
 					</ul>
 				</div>
 			</div>
@@ -172,8 +173,42 @@
 				</div>
 			</div>
 		</div>
-
-
+		
+		<!-- BANDEJA DE COTIZACIONES -->
+				<div id="bandeja" class="bandeja">
+					<div class="bandeja-content">
+						<a href="javascript:void(0)" class="closebtn" onclick="closeBandeja()">&times;</a>
+						<div class="bandeja-header">
+							<h2>Bandeja de Cotizaciones</h2>
+						</div>
+						<div class="cotizaciones">
+							<div class="categoria categoria-aceptadas" onclick="toggleCategoria('aceptadas')">
+								<h3 class="categoria-titulo verde-pastel">Cotizaciones Aceptadas</h3>
+								<div id="aceptadas" class="categoria-contenido" style="display: none;">
+									<!-- Contenido de cotizaciones aceptadas -->
+									<p class="categoria-texto">Contenido de cotizaciones aceptadas.</p>
+								</div>
+							</div>
+							<div class="categoria categoria-rechazadas" onclick="toggleCategoria('rechazadas')">
+								<h3 class="categoria-titulo rojo-pastel">Cotizaciones Rechazadas</h3>
+								<div id="rechazadas" class="categoria-contenido" style="display: none;">
+									<!-- Contenido de cotizaciones rechazadas -->
+									<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
+								</div>
+							</div>
+							<div class="categoria" onclick="toggleCategoria('pendientes')">
+								<h3 class="categoria-titulo">Cotizaciones Pendientes</h3>
+								<div id="pendientes" class="categoria-contenido" style="display: none;">
+									<!-- Aquí mostramos el ID del formulario -->
+									<p class="categoria-texto" id="formularioID">ID de formulario: </p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+		<!-- FINAL DE LA BANDEJA -->
+		
+		
 		<!-- Start Product Section -->
 		<div class="product-section">
 			<div class="container">
@@ -538,14 +573,11 @@
 	}
   </script>
 
-<!-- ... Tu código HTML ... -->
-<!-- ... Tu código HTML ... -->
 
 <script>
 	function submitForm(event) {
-	  event.preventDefault(); // Previene el comportamiento predeterminado del evento de envío
-	  // Código para enviar la solicitud al servidor aquí
-	  // En el caso de una respuesta exitosa, muestra el mensaje en el formulario y habilita el botón adicional
+	  event.preventDefault(); 
+
 	  fetch('/authenticate', {
 		method: 'POST',
 		headers: {
@@ -570,14 +602,11 @@
 		});
 	}
   
-	// Obtén el formulario y agrega un evento de envío que llame a submitForm
 	const form = document.querySelector('form');
 	form.addEventListener('submit', submitForm);
   </script>
   
-  <!-- ... El resto de tu HTML ... -->
-  
-  <!-- ... El resto de tu HTML ... -->
+
   
   <script>
     function openRequestForm() {
@@ -591,8 +620,27 @@
     }
 
     function submitRequest() {
-        // Aquí puedes agregar lógica para enviar la solicitud al servidor
+       
     }
+</script>
+
+<script>
+function openBandeja() {
+    document.getElementById("bandeja").style.width = "300px";
+}
+
+function closeBandeja() {
+    document.getElementById("bandeja").style.display = "none";
+}
+
+function toggleCategoria(categoria) {
+    var content = document.getElementById(categoria);
+    if (content.style.display === "block") {
+        content.style.display = "none";
+    } else {
+        content.style.display = "block";
+    }
+}
 </script>
 
 
