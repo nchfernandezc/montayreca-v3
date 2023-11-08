@@ -43,7 +43,7 @@ UserSchema.pre('save', async function (next) {
 UserSchema.methods.isCorrectPassword = async function (password) {
   try {
     const connection = await connectToDB();
-    const [rows] = await connection.execute('SELECT * FROM user WHERE username = ?', [this.username]);
+    const [rows] = await connection.execute('SELECT * FROM usuarios WHERE username = ?', [this.username]);
     if (rows.length === 0) {
       throw new Error('Usuario no registrado');
     }

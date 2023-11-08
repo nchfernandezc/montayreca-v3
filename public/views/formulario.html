@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="/styles/formulario.css">
+    <title>Montayreca.</title>
+  </head>
+  <body>
+    <div class="d-flex">
+        <div id="sidebar-container" class="bg-primary">
+        <div class="logo">
+            <h4 class="text-light font-weigth-bold">Montayreca.</h4>
+        </div>
+        <div class="menu">
+            <a href="formulario.html" class="d-block text-light p-4"><ion-icon name="reader" class=" lead"> </ion-icon>Formulario</a>
+            <a href="bandeja.html" class="d-block text-light p-4"><ion-icon name="archive" class=" lead "> </ion-icon>Bandeja de entrada</a>
+            <a href="configuracion.html" class="d-block text-light p-4"><ion-icon name="settings" class="lead" ></ion-icon>Configuración</a>
+            <a href="#" class="d-block text-light p-4 position-absolute bottom-0"><ion-icon name="person" class=" lead" ></ion-icon>Cerrar sesión</a>
+        </div>
+        </div>
+        <form action="" >
+            <h1>Formulario de cotización</h1>
+        
+            <div class="form-group">
+              <label for="id">ID</label>
+              <input type="text" id="id" name="id" placeholder="Ingrese el ID">
+            </div>
+        
+            <div class="form-group">
+              <label for="fecha">Fecha</label>
+              <input type="date" id="fecha" name="fecha">
+            </div>
+        
+            <div class="form-group">
+              <label for="tipo">Requerimientos</label>
+              <select id="tipo" name="tipo">
+                <option value="venta">Venta</option>
+                <option value="compra">Compra</option>
+                <option value="reparacion">Reparación</option>
+              </select>
+            </div>
+        
+            <div class="form-group">
+              <label for="descripcion">Descripción</label>
+              <textarea id="descripcion" name="descripcion" rows="10" cols="30"></textarea>
+            </div>
+            <div class="contener">
+              <div class="form-group">
+                <label for="condiciones_pago">Condiciones de pago</label>
+                <select id="condiciones_pago" name="condiciones_pago">
+                  <option value="efectivo">Contado</option>
+                  <option value="transferencia">De contado</option>
+                </select>
+              </div>
+          
+              <div class="form-group">
+                <label for="garantia">Garantía</label>
+                <select id="garantia" name="garantia">
+                  <option value="de_fabrica">De fábrica</option>
+                  <option value="sin_garantia">Sin garantía</option>
+                </select>
+              </div>
+            </div>
+        <div class="contener">
+          <div class="form-group">
+            <label for="tiempo_entrega">Fecha de entrega</label>
+            <input type="date" id="tiempo_entrega" name="tiempo_entrega">
+          </div>
+      </div>
+            <div class="form-group">
+              <label for="monto_total">Monto total</label>
+              <input type="text" id="monto_total" name="monto_total" placeholder="Ingrese el monto total" min="0">
+            </div>
+
+            <button type="submit">Enviar</button>
+          </div>
+
+          </form>
+    </div>
+    <!-- Optional JavaScript; choose one of the two! -->
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <!-- Option 2: Separate Popper and Bootstrap JS -->
+    <!--
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+    -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  </body>
+</html>

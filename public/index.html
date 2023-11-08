@@ -92,6 +92,7 @@
 					<i class="uil uil-lock password"></i>
 					<i class="uil uil-eye-slash pw_hide"></i>
 				  </div>
+				  <input type="hidden" name="itip">
 				  <div class="option_field">
 					<span class="checkbox">
 					  <input type="checkbox" id="check" />
@@ -99,38 +100,44 @@
 					</span>
 					<a href="#" class="forgot_pw">¿Olvidaste tu contraseña?</a>
 				  </div>
-				  <button type="submit" class="btn btn-primary" onclick="submitForm()" id="loginButtonaa">Iniciar sesión</button>
+				  <button type="submit" class="btn btn-primary" onclick="submitForm(event)" id="loginButtonaa">Iniciar sesión</button>
 				</form>
 				<div class="toggle-btn" onclick="toggleForm()">¿Aún no tienes cuenta? Regístrate aquí</div>
 			  </div>
 			  <div id="register-form" class="registerForm" style="display: none;">
 				<p>¿Todavía no estás registrado? Regístrate aquí</p>
-				<form action="/register" method="POST" onsubmit="return validateForm()">
-				  <div class="input_box">
-					<input name='name' type="text" placeholder="Nombre" required />
-					<i class="uil uil-user"></i>
-				  </div>
-				  <div class="input_box">
-					<input name='username' type="username" placeholder="usuario" required /> 
-					<i class="uil uil-envelope-alt email"></i>
-				  </div>
-				  <div class="input_box">
-					<input name="password" id="password" type="password" placeholder="Contraseña" required />
-					<i class="uil uil-lock password"></i>
-					<i class="uil uil-eye-slash pw_hide"></i>
-				  </div>
-				  <div class="input_box">
-					<input name='confirmPassword' id="confirmPassword" type="password" placeholder="Confirmar contraseña" required />
-					<i class="uil uil-lock password"></i>
-					<i class="uil uil-eye-slash pw_hide"></i>
-				  </div>
-				  <button type="submit" class="btn btn-primary" onclick="showConfirmationMessage()">Registrarse</button>
-				  <p id="registrationMessage" style="display: none; color: green;">Registro completado</p>
-				</form>
-				<div class="toggle-btn" onclick="toggleForm()">¿Ya estás registrado? Haz clic aquí para iniciar sesión</div>
-			  </div>
+					<form action="/register" method="POST" onsubmit="return validateForm()">
+						<div class="input_box">
+							<input name='cedula_rif' type="text" placeholder="Cédula o RIF" required />
+						</div>
+						<div class="input_box">
+							<input name='nombre_razon_social' type="text" placeholder="Nombre o Razón Social" required /> 
+						</div>
+						<div class="input_box">
+							<input name="telefono" type="text" placeholder="Teléfono" />
+						</div>
+						<div class="input_box">
+							<input name='direccion' type="text" placeholder="Dirección" />
+						</div>
+						<input name='itip' type="hidden" value="0" />
+						<div class="input_box">
+							<input name='email' type="email" placeholder="Email" required />
+						</div>
+						<div class="input_box">
+							<input name='password' type="password" placeholder="Contraseña" required />
+						</div>
+						<div class="input_box">
+							<input name='confirmPassword' type="password" placeholder="Confirmar Contraseña" required />
+						</div>
+						<button type="submit" class="btn btn-primary" onclick="showConfirmationMessage()">Registrarse</button>
+						<p id="registrationMessage" style="display: none; color: green;">Registro completado</p>
+					</form>
+					<div class="toggle-btn" onclick="toggleForm()">¿Ya estás registrado? Haz clic aquí para iniciar sesión</div>
+				</div>
 			</div>
-		  </div>  
+		</div>
+		
+		
 
 		
 		  
@@ -533,7 +540,8 @@
 
 
 
-  <script>
+
+<script>
 	function openForm() {
 	  var overlay = document.getElementById('overlay');
 	  overlay.style.display = 'flex';
@@ -573,11 +581,10 @@
 	}
   </script>
 
-
 <script>
 	function submitForm(event) {
-	  event.preventDefault(); 
-
+	  event.preventDefault();
+  
 	  fetch('/authenticate', {
 		method: 'POST',
 		headers: {
@@ -588,32 +595,47 @@
 		  password: document.querySelector('input[name="password"]').value,
 		}),
 	  })
-		.then((response) => {
-		  if (response.ok) {
-			document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
-			document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
-			document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
-		  } else {
+		.then(response => {
+		  if (!response.ok) {
 			throw new Error('Autenticación fallida');
 		  }
+		  return response.json();
 		})
-		.catch((error) => {
+		.then(data => {
+		  // Manejar los datos de respuesta aquí
+		  if (data.success) {
+			if (data.itip === 1) {
+			  // Redireccionar a casa.html si itip es 1
+			  window.location.href = 'views/index.html'; 
+			} else {
+			  // Si itip no es 1, realizar otras acciones
+			  document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
+			  document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
+			  document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
+			}
+		  } else {
+			throw new Error(data.error); // Manejar el error específico enviado desde el servidor
+		  }
+		})
+		.catch(error => {
 		  console.error('Error:', error);
+		  // Mostrar mensaje de error en el formulario
+		  document.getElementById('login-form').innerHTML = '<p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p>';
 		});
 	}
   
 	const form = document.querySelector('form');
 	form.addEventListener('submit', submitForm);
-  </script>
-  
 
-  
+	
+</script>
+
   <script>
     function openRequestForm() {
         var requestForm = document.getElementById('overlay-request');
         requestForm.style.display = 'flex';
     }
-
+ 
     function closeRequestForm() {
         var requestForm = document.getElementById('overlay-request');
         requestForm.style.display = 'none';

@@ -28,10 +28,10 @@ connection.connect((err) => {
 
 app.post('/register', async (req, res, next) => {
   try {
-    const { name, username, password } = req.body;
+    const { cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO user (name, username, password) VALUES (?, ?, ?)';
-    connection.query(sql, [name, username, hashedPassword], (err, result) => {
+    const sql = 'INSERT INTO usuarios (cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    connection.query(sql, [cedula_rif, nombre_razon_social, telefono, direccion, email, hashedPassword, itip], (err, result) => {
       if (err) {
         console.error('Error al registrar al usuario:', err);
         res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
@@ -47,32 +47,42 @@ app.post('/register', async (req, res, next) => {
 });
 
 app.post('/authenticate', async (req, res, next) => {
-    try {
-      const { username, password } = req.body;
-      const sql = 'SELECT * FROM user WHERE username = ?';
-      connection.query(sql, [username], async (err, results) => {
-        if (err) {
-          return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
-        }
-        if (results.length === 0) {
-          return res.status(404).json({ error: 'Usuario no encontrado.' });
-        }
-  
-        const user = results[0];
-        const isPasswordCorrect = await bcrypt.compare(password, user.password);
-        if (isPasswordCorrect) {
-            console.log("usuario autenticado");
-          // No envíes el mensaje de autenticación exitosa si no quieres mostrarlo al usuario
-          return res.status(200).end();
+  try {
+    const { username, password } = req.body;
+    const sql = 'SELECT * FROM usuarios WHERE username = ?';
+    connection.query(sql, [username], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado.' });
+      }
+
+      const user = results[0];
+      const isPasswordCorrect = await bcrypt.compare(password, user.password);
+      if (isPasswordCorrect) {
+        const itip = user.itip;
+        console.log(`usuario autenticado - username: ${username}, password: ${password}, itip: ${itip}`);
+        if (itip === 1) {
+          res.status(200).json({ success: true, itip: 1 }); // Agrega itip al JSON de respuesta
         } else {
-          return res.status(401).json({ error: 'Credenciales incorrectas. Por favor, inténtelo de nuevo.' });
+          res.status(200).json({ success: true, itip: 0 }); // Agrega itip al JSON de respuesta
         }
-      });
-    } catch (error) {
-      console.error('Error:', error);
-      return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
-    }
-  });
+      } else {
+        return res.status(401).json({ error: 'Credenciales incorrectas. Por favor, inténtelo de nuevo.' });
+      }
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+  }
+});
+
+
+
+
+
+
   
   app.post('/submit_request', (req, res) => {
     try {
@@ -92,7 +102,6 @@ app.post('/authenticate', async (req, res, next) => {
                     } else {
                         const formId = result[0].id; // Suponiendo que 'result' es un array con un solo elemento
                         // Aquí puedes devolver el formId o realizar otras acciones con él
-
                         res.status(200).json({ formId: formId, message: 'El formulario de requerimientos se ha enviado correctamente' });
                     }
                 });
