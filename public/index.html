@@ -141,17 +141,13 @@
 
 		
 		  
-		  <div id="overlay-request" class="overlay" style="display: none;">
+		<div id="overlay-request" class="overlay" style="display: none;">
 			<div class="form-container">
 				<div class="close-btn" onclick="closeRequestForm()">X</div>
 				<h2>Formulario de Requerimientos</h2>
 				<div id="request-form">
 					<p>Por favor complete los detalles del requerimiento:</p>
 					<form action="/submit_request" method="POST" onsubmit="hideForm()">
-						<div class="input_box">
-							<input name="id" type="text" placeholder="ID" required />
-							<i class="uil uil-id-badge"></i>
-						</div>
 						<div class="input_box">
 							<input name="fecha" type="date" required />
 							<i class="uil uil-calendar-alt"></i>
@@ -181,39 +177,48 @@
 			</div>
 		</div>
 		
+		
 		<!-- BANDEJA DE COTIZACIONES -->
-				<div id="bandeja" class="bandeja">
-					<div class="bandeja-content">
-						<a href="javascript:void(0)" class="closebtn" onclick="closeBandeja()">&times;</a>
-						<div class="bandeja-header">
-							<h2>Bandeja de Cotizaciones</h2>
+		<div id="bandeja" class="bandeja">
+			<div class="bandeja-content">
+				<a href="javascript:void(0)" class="closebtn" onclick="closeBandeja()">&times;</a>
+				<div class="bandeja-header">
+					<h2>Bandeja de Cotizaciones</h2>
+				</div>
+				<div class="cotizaciones">
+					<div class="categoria categoria-aceptadas" onclick="toggleCategoria('aceptadas')">
+						<h3 class="categoria-titulo verde-pastel">Cotizaciones Aceptadas</h3>
+						<div id="aceptadas" class="categoria-contenido" style="display: none;">
+							<!-- Contenido de cotizaciones aceptadas -->
+							<p class="categoria-texto">Contenido de cotizaciones aceptadas.</p>
 						</div>
-						<div class="cotizaciones">
-							<div class="categoria categoria-aceptadas" onclick="toggleCategoria('aceptadas')">
-								<h3 class="categoria-titulo verde-pastel">Cotizaciones Aceptadas</h3>
-								<div id="aceptadas" class="categoria-contenido" style="display: none;">
-									<!-- Contenido de cotizaciones aceptadas -->
-									<p class="categoria-texto">Contenido de cotizaciones aceptadas.</p>
-								</div>
-							</div>
-							<div class="categoria categoria-rechazadas" onclick="toggleCategoria('rechazadas')">
-								<h3 class="categoria-titulo rojo-pastel">Cotizaciones Rechazadas</h3>
-								<div id="rechazadas" class="categoria-contenido" style="display: none;">
-									<!-- Contenido de cotizaciones rechazadas -->
-									<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
-								</div>
-							</div>
-							<div class="categoria" onclick="toggleCategoria('pendientes')">
-								<h3 class="categoria-titulo">Cotizaciones Pendientes</h3>
-								<div id="pendientes" class="categoria-contenido" style="display: none;">
-									<!-- Aquí mostramos el ID del formulario -->
-									<p class="categoria-texto" id="formularioID">ID de formulario: </p>
-								</div>
-							</div>
+					</div>
+					<div class="categoria categoria-rechazadas" onclick="toggleCategoria('rechazadas')">
+						<h3 class="categoria-titulo rojo-pastel">Cotizaciones Rechazadas</h3>
+						<div id="rechazadas" class="categoria-contenido" style="display: none;">
+							<!-- Contenido de cotizaciones rechazadas -->
+							<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
+						</div>
+					</div>
+					<div class="categoria" onclick="toggleCategoria('pendientes')">
+						<h3 class="categoria-titulo">Cotizaciones Pendientes</h3>
+						<div id="pendientes" class="categoria-contenido" style="display: none;">
+							<!-- Aquí mostramos el ID del formulario -->
+							<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
+						</div>
+					</div>
+					<div class="categoria" onclick="toggleCategoria('recibidas')">
+						<h3 class="categoria-titulo">Cotizaciones Recibidas</h3>
+						<div id="recibidas" class="categoria-contenido" style="display: none;">
+							<!-- Aquí se mostrará el contenido de cotizaciones recibidas -->
+							<p class="categoria-texto">Contenido de cotizaciones recibidas.</p>
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
 		<!-- FINAL DE LA BANDEJA -->
+
 		
 		
 		<!-- Start Product Section -->
@@ -580,55 +585,209 @@
 	  return true;
 	}
   </script>
-
 <script>
-	function submitForm(event) {
-	  event.preventDefault();
-  
-	  fetch('/authenticate', {
-		method: 'POST',
-		headers: {
-		  'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-		  username: document.querySelector('input[name="username"]').value,
-		  password: document.querySelector('input[name="password"]').value,
-		}),
-	  })
-		.then(response => {
-		  if (!response.ok) {
-			throw new Error('Autenticación fallida');
-		  }
-		  return response.json();
-		})
-		.then(data => {
-		  // Manejar los datos de respuesta aquí
-		  if (data.success) {
-			if (data.itip === 1) {
-			  // Redireccionar a casa.html si itip es 1
-			  window.location.href = 'views/index.html'; 
-			} else {
-			  // Si itip no es 1, realizar otras acciones
-			  document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
-			  document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
-			  document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
-			}
-		  } else {
-			throw new Error(data.error); // Manejar el error específico enviado desde el servidor
-		  }
-		})
-		.catch(error => {
-		  console.error('Error:', error);
-		  // Mostrar mensaje de error en el formulario
-		  document.getElementById('login-form').innerHTML = '<p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p>';
-		});
-	}
-  
-	const form = document.querySelector('form');
-	form.addEventListener('submit', submitForm);
+    function submitForm(event) {
+        event.preventDefault();
 
-	
+        fetch('/authenticate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: document.querySelector('input[name="username"]').value,
+                password: document.querySelector('input[name="password"]').value,
+            }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Autenticación fallida');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Manejar los datos de respuesta aquí
+                if (data.success) {
+                    if (data.itip === 1) {
+                        // Redireccionar a casa.html si itip es 1
+                        window.location.href = 'views/index.html'; 
+                    } else {
+                        // Si itip no es 1, realizar otras acciones
+                        document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
+                        document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
+                        document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
+
+                        // Agregar el ID del formulario a la bandeja de cotizaciones
+                        const formIds = data.formIds;
+
+                        formIds.forEach(formId => {
+                            fetch('/fetch_request_details', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    formId: formId,
+                                }),
+                            })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Error al obtener los detalles del formulario');
+                                    }
+                                    return response.json();
+                                })
+                                .then(details => {
+                                    const formDetailsSubContainer = document.createElement('div');
+                                    const istatus = details.istatus; // Cambiado de estado a istatus
+                                    if (istatus === 0) {
+                                        const categoriaPendientes = document.getElementById('pendientes');
+                                        const contentPendientes = categoriaPendientes.querySelector('.categoria-texto');
+                                        contentPendientes.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 1) {
+                                        const categoriaAceptadas = document.getElementById('aceptadas');
+                                        const contentAceptadas = categoriaAceptadas.querySelector('.categoria-texto');
+                                        contentAceptadas.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 2) {
+                                        const categoriaRechazadas = document.getElementById('rechazadas');
+                                        const contentRechazadas = categoriaRechazadas.querySelector('.categoria-texto');
+                                        contentRechazadas.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 3) {
+                                        const categoriaRecibidas = document.getElementById('recibidas');
+                                        const contentRecibidas = categoriaRecibidas.querySelector('.categoria-texto');
+                                        const newDiv = document.createElement('div');
+                                        newDiv.innerHTML = `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br>
+                                            <button onclick="acceptForm('${details.formId}')">Aceptar</button>
+                                            <button onclick="rejectForm('${details.formId}')">Rechazar</button><hr>
+                                        `;
+                                        contentRecibidas.appendChild(newDiv);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    // Manejar el error en la obtención de los detalles del formulario
+                                });
+                        });
+                    }
+                } else {
+                    throw new Error(data.error); // Manejar el error específico enviado desde el servidor
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Mostrar mensaje de error en el formulario
+                document.getElementById('login-form').innerHTML = '<p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p>';
+            });
+    }
+
+		function acceptForm(formId) {
+		event.stopPropagation();
+		fetch('/update_form_status', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				formId: formId,
+				istatus: 1, // 1 representa el estado "Aceptadas"
+			}),
+		})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Error al actualizar el estado del formulario');
+				}
+				// Llama a la función para actualizar la bandeja de formularios
+				updateBandeja();
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				// Manejar el error en la actualización del estado del formulario
+			});
+	}
+
+	function rejectForm(formId) {
+		event.stopPropagation();
+		fetch('/update_form_status', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				formId: formId,
+				istatus: 2, // 2 representa el estado "Rechazadas"
+			}),
+		})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Error al actualizar el estado del formulario');
+				}
+				// Llama a la función para actualizar la bandeja de formularios
+				updateBandeja();
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				// Manejar el error en la actualización del estado del formulario
+			});
+	}
+
+	function updateBandeja() {
+    fetch('/fetch_bandeja_data')
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error('Error al obtener los datos de la bandeja de formularios');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data from server:', data);
+            data.forEach(form => {
+                const categoria = form.istatus;
+                console.log('Categoria:', categoria);
+                const categoriaElement = document.getElementById(categoria);
+                console.log('Categoria Element:', categoriaElement);
+                categoriaElement.innerHTML += `
+                    ID del Formulario: ${form.formId}<br>
+                    Fecha: ${form.fecha}<br>
+                    Tipo de Requerimiento: ${form.tipo_de_requerimiento}<br>
+                    Descripción: ${form.descripcion}<br>
+                    Nota: ${form.nota}<br><hr>
+                `;
+            });
+        })
+        .catch(error => {
+            console.error('Error al obtener los datos de la bandeja de formularios:', error);
+        });
+}
+
+
 </script>
+
+
+
+
 
   <script>
     function openRequestForm() {
@@ -647,13 +806,15 @@
 </script>
 
 <script>
-function openBandeja() {
-    document.getElementById("bandeja").style.width = "300px";
-}
+    function openBandeja() {
+        document.getElementById("bandeja").style.width = "300px";
+    }
 
-function closeBandeja() {
-    document.getElementById("bandeja").style.display = "none";
-}
+    function closeBandeja() {
+        document.getElementById("bandeja").style.width = "0";
+    }
+</script>
+<script>
 
 function toggleCategoria(categoria) {
     var content = document.getElementById(categoria);
