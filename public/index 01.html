@@ -31,6 +31,9 @@
 
 				<div class="collapse navbar-collapse" id="navbarsFurni">
 					<ul class="custom-navbar-nav navbar-nav ms-auto mb-2 mb-md-0">
+						<li class="nav-item active">
+							<a class="nav-link" href="index.html">Inicio</a>
+						</li>
 						<!--
 						<li><a class="nav-link" href="#precios">Compra</a></li>
 						<li><a class="nav-link" href="about.html">Sobre nosotros</a></li>
@@ -42,12 +45,11 @@
 					<ul class="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
 						<button onclick="openForm()" class="open-form-button" style="background: none; border: none; padding: 0; margin-right: 10px; cursor: pointer;">
 							<img src="images/user.svg" style="width: 24px; height: 24px;">
-						</button>						  
-						<button class="btn btn-primary" id="solicitarButton" style="display: none; margin-right: 10px;" onclick="openRequestForm()">Solicitar</button> 
-						<button class="btn btn-primary" id="bandejaButton" style="display: none; margin-right: 10px;" onclick="openBandeja()">Bandeja</button>		
-						<button class="btn btn-primary btn-rojo" id="logoutButton" style="display: none; margin-right: 10px;" onclick="cerrarSesion()">Cerrar Sesión</button>				  
+						  </button>						  
+						  <button class="btn btn-primary" id="solicitarButton" style="display: none;" onclick="openRequestForm()">Solicitar</button>
+						  <button class="btn btn-primary" id="bandejaButton" style="display: none;"
+						  onclick="openBandeja()">Bandeja</button>						  
 					</ul>
-					
 				</div>
 			</div>
 				
@@ -82,7 +84,7 @@
 				<p>Por favor inicia sesión para continuar</p>
 				<form action="/authenticate" method="POST" onsubmit="hideForm()">
 				  <div class="input_box">
-					<input name='email' type="email" placeholder="Correo electrónico" required />
+					<input name='email' type="email" placeholder="email" required />
 					<i class="uil uil-envelope-alt email"></i>
 				  </div>
 				  <div class="input_box">
@@ -104,7 +106,7 @@
 			  </div>
 			  <div id="register-form" class="registerForm" style="display: none;">
 				<p>¿Todavía no estás registrado? Regístrate aquí</p>
-					<form action="/register" method="POST" onsubmit="return registerUser(event);">
+					<form action="/register" method="POST" onsubmit="return validateForm()">
 						<div class="input_box">
 							<input name='cedula_rif' type="text" placeholder="Cédula o RIF" required />
 						</div>
@@ -125,9 +127,9 @@
 							<input name='password' type="password" placeholder="Contraseña" required />
 						</div>
 						<div class="input_box">
-							<input name='password_confirmation' type="password" placeholder="Confirmar contraseña" required />
+							<input name='confirmPassword' type="password" placeholder="Confirmar Contraseña" required />
 						</div>
-						<button type="submit" class="btn btn-primary">Registrarse</button>
+						<button type="submit" class="btn btn-primary" onclick="showConfirmationMessage()">Registrarse</button>
 						<p id="registrationMessage" style="display: none; color: green;">Registro completado</p>
 					</form>
 					<div class="toggle-btn" onclick="toggleForm()">¿Ya estás registrado? Haz clic aquí para iniciar sesión</div>
@@ -142,9 +144,9 @@
 		<div id="overlay-request" class="overlay" style="display: none;">
 			<div class="form-container">
 				<div class="close-btn" onclick="closeRequestForm()">X</div>
-				<h2>Formulario de Solicitudes</h2>
+				<h2>Formulario de Requerimientos</h2>
 				<div id="request-form">
-					<p>Por favor complete los detalles de la solicitud:</p>
+					<p>Por favor complete los detalles del requerimiento:</p>
 					<form action="/submit_request" method="POST" onsubmit="hideForm()">
 						<div class="input_box">
 							<input name="fecha" type="date" required />
@@ -152,7 +154,7 @@
 						</div>
 						<div class="input_box">
 							<select name="tipo_de_requerimiento" required>
-								<option value="" disabled selected>Seleccione el tipo de Solicitud</option>
+								<option value="" disabled selected>Seleccione el tipo de requerimiento</option>
 								<option value="Solicitud de servicio">Solicitud de servicio</option>
 								<option value="Reclamo">Reclamo</option>
 								<option value="Consulta">Consulta</option>
@@ -169,7 +171,7 @@
 							<i class="uil uil-sticky-note"></i>
 						</div>
 						<br>
-						<button type="submit" class="btn btn-primary" onclick="submitRequest(event)">Enviar Solicitud</button>
+						<button type="submit" class="btn btn-primary" onclick="submitForm()">Enviar Requerimiento</button>
 					</form>
 				</div>
 			</div>
@@ -542,103 +544,12 @@
 </html>
 
 
-<script>
-function registerUser(event) {
-    event.preventDefault();
 
-	const formData = {
-        cedula_rif: document.querySelector('#register-form input[name="cedula_rif"]').value,
-        nombre_razon_social: document.querySelector('#register-form input[name="nombre_razon_social"]').value,
-        telefono: document.querySelector('#register-form input[name="telefono"]').value,
-        direccion: document.querySelector('#register-form input[name="direccion"]').value,
-        email: document.querySelector('#register-form input[name="email"]').value,
-        itip: document.querySelector('#register-form input[name="itip"]').value || "0",
-        password: document.querySelector('#register-form input[name="password"]').value,
-        confirmPassword: document.querySelector('#register-form input[name="password_confirmation"]').value,
-    };
-
-    console.log('Datos enviados de el front:', formData);
-
-    fetch('/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            cedula_rif: document.querySelector('input[name="cedula_rif"]').value,
-            nombre_razon_social: document.querySelector('input[name="nombre_razon_social"]').value,
-            telefono: document.querySelector('input[name="telefono"]').value,
-            direccion: document.querySelector('input[name="direccion"]').value,
-            email: document.querySelector('#register-form input[name="email"]').value,
-            itip: document.querySelector('input[name="itip"]').value || "0",
-			password: document.querySelector('#register-form input[name="password"]').value,
-
-        }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error al registrar al usuario');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Manejar los datos de respuesta aquí
-        if (data.message === 'Registro completado') {
-            // Mostrar mensaje de éxito en el formulario de registro
-            const registrationMessage = document.getElementById('registrationMessage');
-            registrationMessage.textContent = 'Registro completado';
-            registrationMessage.style.color = 'green';
-            registrationMessage.style.display = 'block';
-
-			// Limpiar los campos del formulario después del registro
-			document.querySelector('input[name="cedula_rif"]').value = '';
-			document.querySelector('input[name="nombre_razon_social"]').value = '';
-			document.querySelector('input[name="telefono"]').value = '';
-			document.querySelector('input[name="direccion"]').value = '';
-			document.querySelector('#register-form input[name="email"]').value = '';
-			document.querySelector('#register-form input[name="password"]').value = '';  // Corregir aquí
-			document.querySelector('input[name="password_confirmation"]').value = '';
-
-
-            // Ocultar el mensaje de éxito después de 5 segundos
-            setTimeout(() => {
-                registrationMessage.style.display = 'none';
-            }, 5000);
-
-            // Realizar otras acciones según sea necesario
-        } else {
-            throw new Error(data.error); // Manejar el error específico enviado desde el servidor
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Mostrar mensaje de error en el formulario de registro
-        const registrationMessage = document.getElementById('registrationMessage');
-        registrationMessage.textContent = 'Ha ocurrido un error durante el registro. Por favor, inténtelo de nuevo.';
-        registrationMessage.style.color = 'red';
-        registrationMessage.style.display = 'block';
-
-        // Ocultar el mensaje de error después de 5 segundos
-        setTimeout(() => {
-            registrationMessage.style.display = 'none';
-        }, 5000);
-    });
-}
-</script>
 
 <script>
 	function openForm() {
 	  var overlay = document.getElementById('overlay');
-	document.querySelector('#register-form input[name="cedula_rif"]').value = '';
-	document.querySelector('#register-form input[name="nombre_razon_social"]').value = '';
-	document.querySelector('#register-form input[name="telefono"]').value = '';
-	document.querySelector('#register-form input[name="direccion"]').value = '';
-	document.querySelector('#register-form input[name="email"]').value = '';
-	document.querySelector('#register-form input[name="itip"]').value = '';
-	document.querySelector('#register-form input[name="password"]').value = '';
-	document.querySelector('#register-form input[name="password_confirmation"]').value = ''; 
-
-	overlay.style.display = 'flex';
+	  overlay.style.display = 'flex';
 	}
   
 	function closeForm() {
@@ -662,7 +573,6 @@ function registerUser(event) {
 	}
   </script>
 
-
 <script>
 	function validateForm() {
 	  var password = document.getElementById("password").value;
@@ -676,158 +586,123 @@ function registerUser(event) {
 	}
   </script>
 <script>
-let formIds; // Declarar formIds en un ámbito más amplio
-function submitForm(event) {
-    event.preventDefault();
+    function submitForm(event) {
+        event.preventDefault();
 
-    fetch('/authenticate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            email: document.querySelector('#login-form input[name="email"]').value,
-            password: document.querySelector('#login-form input[name="password"]').value,
-        }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Autenticación fallida');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Manejar los datos de respuesta aquí
-        if (data.success) {
-            if (data.itip === 1) {
-                // Redireccionar a casa.html si itip es 1
-                window.location.href = 'views/index.html';
-            } else {
-                // Si itip no es 1, realizar otras acciones
-                document.querySelector('.form-container').innerHTML = `
-				<div id="login-form">
-					<h2>¡Bienvenido!</h2>
-					<p>Ha iniciado sesión</p>
-					<div class="close-btn" onclick="closeForm()">X</div>
-				</div>
-				`;
-                document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
-                document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
-				document.getElementById('logoutButton').style.display = 'inline'; // Habilita el botón "Cerrar Sesión"
-
-                // Agregar el ID del formulario a la bandeja de cotizaciones
-                // Obtener formIds y asignarlos a la variable global
-                formIds = data.formIds;
-
-                // Agregar el ID del formulario a la bandeja de cotizaciones
-                datosBandeja(formIds);
-
-            }
-        } else {
-            throw new Error(data.error); // Manejar el error específico enviado desde el servidor
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Mostrar mensaje de error en el formulario
-		document.querySelector('.form-container').innerHTML = '<div id="login-form"> <h2>¡Bienvenido!</h2> <p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p> <form action="/authenticate" method="POST" onsubmit="hideForm()"> <div class="input_box"> <input name="email" type="email" placeholder="Correo electrónico" required /> <i class="uil uil-envelope-alt email"></i> </div> <div class="input_box"> <input name="password" type="password" placeholder="Contraseña" required /> <i class="uil uil-lock password"></i> <i class="uil uil-eye-slash pw_hide"></i> </div> <input type="hidden" name="itip"> <div class="option_field"> <span class="checkbox"> <input type="checkbox" id="check" /> <label for="check">Recordarme</label> </span> <a href="#" class="forgot_pw">¿Olvidaste tu contraseña?</a> </div> <button type="submit" class="btn btn-primary" onclick="submitForm(event)" id="loginButtonaa">Iniciar sesión</button> </form> <div class="toggle-btn" onclick="toggleForm()">¿Aún no tienes cuenta? Regístrate aquí</div> <div class="close-btn" onclick="closeForm()">X</div> </div>';
-
-
-    });
-}
-
-function datosBandeja(formIds) {
-
-    formIds.forEach(formId => {
-        fetch('/fetch_request_details', {
+        fetch('/authenticate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                formId: formId,
+                username: document.querySelector('input[name="username"]').value,
+                password: document.querySelector('input[name="password"]').value,
             }),
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al obtener los detalles del formulario');
-            }
-            return response.json();
-        })
-        .then(details => {
-            details.solicitudes.forEach(solicitud => {
-                // Mostrar detalles de solicitudes
-                if (solicitud.istatus === 0) {
-                    // Agregar a la categoría 'pendientes' solo si istatus es 0
-                    document.getElementById('pendientes').innerHTML += `
-                        ID del Formulario: ${solicitud.formId}<br>
-                        Fecha: ${solicitud.fecha}<br>
-                        Tipo de Requerimiento: ${solicitud.tipo_de_requerimiento}<br>
-                        Descripción: ${solicitud.descripcion}<br>
-                        Nota: ${solicitud.nota}<br><hr>
-                    `;
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Autenticación fallida');
                 }
-            });
+                return response.json();
+            })
+            .then(data => {
+                // Manejar los datos de respuesta aquí
+                if (data.success) {
+                    if (data.itip === 1) {
+                        // Redireccionar a casa.html si itip es 1
+                        window.location.href = 'views/index.html'; 
+                    } else {
+                        // Si itip no es 1, realizar otras acciones
+                        document.getElementById('login-form').innerHTML = '<p>Inicio de sesión exitoso</p>';
+                        document.getElementById('solicitarButton').style.display = 'inline'; // Muestra el botón adicional
+                        document.getElementById('bandejaButton').style.display = 'inline'; // Habilita el botón "Bandeja"
 
-            details.cotizaciones.forEach(cotizacion => {
-                if (cotizacion.istatus === 1) {
-                    // Mostrar detalles de cotizaciones (istatus 1)
-                    document.getElementById('aceptadas').innerHTML += `
-                        ID de Cotización: ${cotizacion.formId}<br>
-                        Fecha: ${cotizacion.fecha}<br>
-                        Tipo: ${cotizacion.tipo_de_requerimiento}<br>
-                        Descripción: ${cotizacion.descripcion}<br>
-                        Condiciones de Pago: ${cotizacion.condiciones_pago}<br>
-                        Garantía: ${cotizacion.garantia}<br>
-                        Tiempo de Entrega: ${cotizacion.tiempo_entrega}<br>
-                        Monto Total: ${cotizacion.monto_total}<br>
-                        Estado: ${cotizacion.istatus}<br>
-                        Usuario: ${cotizacion.usuario}<br><hr>
-                    `;
-                } else if (cotizacion.istatus === 2) {
-                    // Mostrar detalles de cotizaciones (istatus 2)
-                    document.getElementById('rechazadas').innerHTML += `
-                        ID de Cotización: ${cotizacion.formId}<br>
-                        Fecha: ${cotizacion.fecha}<br>
-                        Tipo: ${cotizacion.tipo_de_requerimiento}<br>
-                        Descripción: ${cotizacion.descripcion}<br>
-                        Condiciones de Pago: ${cotizacion.condiciones_pago}<br>
-                        Garantía: ${cotizacion.garantia}<br>
-                        Tiempo de Entrega: ${cotizacion.tiempo_entrega}<br>
-                        Monto Total: ${cotizacion.monto_total}<br>
-                        Estado: ${cotizacion.istatus}<br>
-                        Usuario: ${cotizacion.usuario}<br><hr>
-                    `;
-                } else if (cotizacion.istatus === 3) {
-                    // Mostrar detalles de cotizaciones (istatus 3)
-                    document.getElementById('recibidas').innerHTML += `
-                        ID de Cotización: ${cotizacion.formId}<br>
-                        Fecha: ${cotizacion.fecha}<br>
-                        Tipo: ${cotizacion.tipo_de_requerimiento}<br>
-                        Descripción: ${cotizacion.descripcion}<br>
-                        Condiciones de Pago: ${cotizacion.condiciones_pago}<br>
-                        Garantía: ${cotizacion.garantia}<br>
-                        Tiempo de Entrega: ${cotizacion.tiempo_entrega}<br>
-                        Monto Total: ${cotizacion.monto_total}<br>
-                        Estado: ${cotizacion.istatus}<br>
-                        Usuario: ${cotizacion.usuario}<br>
-                        <button onclick="acceptForm('${cotizacion.formId}', event)">Aceptar</button>
-                        <button onclick="rejectForm('${cotizacion.formId}', event)">Rechazar</button><hr>
-                    `;
+                        // Agregar el ID del formulario a la bandeja de cotizaciones
+                        const formIds = data.formIds;
+
+                        formIds.forEach(formId => {
+                            fetch('/fetch_request_details', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    formId: formId,
+                                }),
+                            })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Error al obtener los detalles del formulario');
+                                    }
+                                    return response.json();
+                                })
+                                .then(details => {
+                                    const formDetailsSubContainer = document.createElement('div');
+                                    const istatus = details.istatus; // Cambiado de estado a istatus
+                                    if (istatus === 0) {
+                                        const categoriaPendientes = document.getElementById('pendientes');
+                                        const contentPendientes = categoriaPendientes.querySelector('.categoria-texto');
+                                        contentPendientes.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 1) {
+                                        const categoriaAceptadas = document.getElementById('aceptadas');
+                                        const contentAceptadas = categoriaAceptadas.querySelector('.categoria-texto');
+                                        contentAceptadas.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 2) {
+                                        const categoriaRechazadas = document.getElementById('rechazadas');
+                                        const contentRechazadas = categoriaRechazadas.querySelector('.categoria-texto');
+                                        contentRechazadas.innerHTML += `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br><hr>
+                                        `;
+                                    } else if (istatus === 3) {
+                                        const categoriaRecibidas = document.getElementById('recibidas');
+                                        const contentRecibidas = categoriaRecibidas.querySelector('.categoria-texto');
+                                        const newDiv = document.createElement('div');
+                                        newDiv.innerHTML = `
+                                            ID del Formulario: ${details.formId}<br>
+                                            Fecha: ${details.fecha}<br>
+                                            Tipo de Requerimiento: ${details.tipo_de_requerimiento}<br>
+                                            Descripción: ${details.descripcion}<br>
+                                            Nota: ${details.nota}<br>
+                                            <button onclick="acceptForm('${details.formId}')">Aceptar</button>
+                                            <button onclick="rejectForm('${details.formId}')">Rechazar</button><hr>
+                                        `;
+                                        contentRecibidas.appendChild(newDiv);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    // Manejar el error en la obtención de los detalles del formulario
+                                });
+                        });
+                    }
+                } else {
+                    throw new Error(data.error); // Manejar el error específico enviado desde el servidor
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Mostrar mensaje de error en el formulario
+                document.getElementById('login-form').innerHTML = '<p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p>';
             });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Manejar el error en la obtención de los detalles del formulario
-        });
-    });
-}
-</script>
-<script>
+    }
 
-
-		function acceptForm(formId, event) {
+		function acceptForm(formId) {
 		event.stopPropagation();
 		fetch('/update_form_status', {
 			method: 'POST',
@@ -845,7 +720,6 @@ function datosBandeja(formIds) {
 				}
 				// Llama a la función para actualizar la bandeja de formularios
 				updateBandeja();
-				datosBandeja(formIds);
 			})
 			.catch(error => {
 				console.error('Error:', error);
@@ -853,7 +727,7 @@ function datosBandeja(formIds) {
 			});
 	}
 
-	function rejectForm(formId, event) {
+	function rejectForm(formId) {
 		event.stopPropagation();
 		fetch('/update_form_status', {
 			method: 'POST',
@@ -871,7 +745,6 @@ function datosBandeja(formIds) {
 				}
 				// Llama a la función para actualizar la bandeja de formularios
 				updateBandeja();
-				datosBandeja(formIds);
 			})
 			.catch(error => {
 				console.error('Error:', error);
@@ -913,14 +786,12 @@ function datosBandeja(formIds) {
 </script>
 
 
+
+
+
   <script>
     function openRequestForm() {
         var requestForm = document.getElementById('overlay-request');
-		document.getElementsByName('fecha')[0].value = '';
-        document.getElementsByName('tipo_de_requerimiento')[0].selectedIndex = 0;
-        document.getElementsByName('descripcion')[0].value = '';
-        document.getElementsByName('nota')[0].value = '';
-
         requestForm.style.display = 'flex';
     }
  
@@ -929,137 +800,30 @@ function datosBandeja(formIds) {
         requestForm.style.display = 'none';
     }
 
-	function submitRequest(event) {
-    event.preventDefault();
-
-    // Tu código existente para enviar la solicitud y manejar la respuesta del servidor
-    fetch('/submit_request', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            fecha: document.querySelector('input[name="fecha"]').value,
-            tipo_de_requerimiento: document.querySelector('select[name="tipo_de_requerimiento"]').value,
-            descripcion: document.querySelector('textarea[name="descripcion"]').value,
-            nota: document.querySelector('textarea[name="nota"]').value,
-        }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(errorText => {
-                // Imprimir detalles del error en la consola
-                console.error(`Error al enviar la solicitud. Detalles: ${errorText}`);
-                throw new Error(`Error al enviar la solicitud. Detalles: ${errorText}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Manejar los datos de respuesta aquí
-        console.log('Datos recibidos del servidor:', data);
-
-        const clearFormAndMessages = () => {
-            // Limpiar los campos del formulario
-            document.querySelector('input[name="fecha"]').value = '';
-            document.querySelector('select[name="tipo_de_requerimiento"]').selectedIndex = 0;
-            document.querySelector('textarea[name="descripcion"]').value = '';
-            document.querySelector('textarea[name="nota"]').value = '';
-        };
-
-        if (data.success) {
-            // Mostrar mensaje de éxito en el formulario de solicitud
-            const successMessage = document.createElement('p');
-            successMessage.textContent = 'Su formulario se ha enviado correctamente!';
-            successMessage.classList.add('success-message'); // Agrega una clase para el estilo
-
-            // Agregar mensaje de éxito al formulario sin borrar su contenido actual
-            const requestForm = document.getElementById('request-form');
-            requestForm.appendChild(successMessage);
-
-            // Mostrar detalles del formulario (opcional)
-            const formDetailsContainer = document.createElement('div');
-            formDetailsContainer.innerHTML = data.formDetails;
-            requestForm.appendChild(formDetailsContainer);
-
-            // Ocultar el mensaje de éxito después de 5 segundos
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 5000);
-
-            clearFormAndMessages(); // Limpiar campos y ocultar mensajes
-
-            // Realizar otras acciones según sea necesario
-        } else {
-            // Mostrar mensaje de error en el formulario de solicitud
-            const errorMessage = document.createElement('p');
-            errorMessage.textContent = data.message || 'Ha ocurrido un error al enviar la solicitud.';
-            errorMessage.classList.add('error-message'); // Agrega una clase para el estilo
-
-            // Agregar mensaje de error al formulario sin borrar su contenido actual
-            const requestForm = document.getElementById('request-form');
-            requestForm.appendChild(errorMessage);
-
-            // Ocultar el mensaje de error después de 5 segundos
-            setTimeout(() => {
-                errorMessage.style.display = 'none';
-            }, 5000);
-
-            clearFormAndMessages(); // Limpiar campos y ocultar mensajes
-        }
-    })
-    .catch(error => {
-        console.error('Error en catch:', error);
-
-        // Mostrar mensaje de error en el formulario de solicitud
-        const errorMessage = document.createElement('p');
-        errorMessage.textContent = `Ha ocurrido un error al enviar la solicitud. Detalles: ${error.message}`;
-        errorMessage.classList.add('error-message'); // Agrega una clase para el estilo
-
-        // Agregar mensaje de error al formulario sin borrar su contenido actual
-        const requestForm = document.getElementById('request-form');
-        requestForm.appendChild(errorMessage);
-
-        // Ocultar el mensaje de error después de 5 segundos
-        setTimeout(() => {
-            errorMessage.style.display = 'none';
-        }, 5000);
-
-        clearFormAndMessages(); // Limpiar campos y ocultar mensajes
-    });
-}
-
-
-
-
+    function submitRequest() {
+       
+    }
 </script>
 
 <script>
-function toggleCategoria(categoria) {
-    const categoriaContent = document.getElementById(categoria);
-    categoriaContent.style.display = categoriaContent.style.display === 'none' ? 'block' : 'none';
+    function openBandeja() {
+        document.getElementById("bandeja").style.width = "300px";
+    }
 
-    if (categoriaContent.style.display === 'block') {
-        console.log(`Clic en la categoría: ${categoria}`);
-        datosBandeja(formIds);
+    function closeBandeja() {
+        document.getElementById("bandeja").style.width = "0";
+    }
+</script>
+<script>
+
+function toggleCategoria(categoria) {
+    var content = document.getElementById(categoria);
+    if (content.style.display === "block") {
+        content.style.display = "none";
+    } else {
+        content.style.display = "block";
     }
 }
-
-	function openBandeja() {
-		document.getElementById("bandeja").style.width = "300px";
-		// Actualizar la bandeja al abrir la bandeja
-	}
-
-	function closeBandeja() {
-		document.getElementById("bandeja").style.width = "0";
-	}
-
 </script>
-<script>
-function cerrarSesion() {
-    // Lógica para cerrar sesión (puedes redirigir a la página de inicio de sesión, por ejemplo)
-    // Aquí puedes hacer una petición al servidor para cerrar la sesión si es necesario
-    // Por ahora, simplemente recargamos la página
-    location.reload();
-}
-</script>
+
+

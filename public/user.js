@@ -1,13 +1,4 @@
 const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
-
-const saltRounds = 10;
-
-const UserSchema = {
-  name: { type: String, required: true },
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-};
 
 async function connectToDB() {
   try {
@@ -25,31 +16,16 @@ async function connectToDB() {
   }
 }
 
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-
-  try {
-    const connection = await connectToDB();
-    const hashedPassword = await bcrypt.hash(this.password, saltRounds);
-    this.password = hashedPassword;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
-});
+const UserSchema = {
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+};
 
 UserSchema.methods.isCorrectPassword = async function (password) {
   try {
-    const connection = await connectToDB();
-    const [rows] = await connection.execute('SELECT * FROM usuarios WHERE username = ?', [this.username]);
-    if (rows.length === 0) {
-      throw new Error('Usuario no registrado');
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(password, rows[0].password);
-    return isPasswordCorrect;
+    // Comparamos la contraseña ingresada con la contraseña almacenada en la base de datos
+    return password === this.password;
   } catch (error) {
     throw new Error('Error al comparar contraseñas');
   }

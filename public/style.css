@@ -508,6 +508,16 @@ a {
       border-color: white;
       color: #ffffff; }
 
+.btn.btn-primary.btn-rojo {
+  background: #ff0000;
+  border-color: #ff0000;
+}
+
+.btn.btn-primary.btn-rojo:hover {
+  background: #cc0000;
+  border-color: #cc0000;
+}
+
 .section-title {
   color: #2f2f2f; }
 
