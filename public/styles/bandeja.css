@@ -34,3 +34,19 @@ a:hover{
 .h1{
     margin-left: 400px;
 }
+
+.bandeja-content {
+    max-height: 95vh; /* Establece la altura máxima en el 70% de la altura visible del viewport */
+    overflow-y: scroll; /* Agrega desplazamiento vertical si el contenido excede la altura máxima */
+    padding: 10px; /* Agrega un relleno para evitar que el contenido toque los bordes */
+}
+
+#tablaContainer {
+    max-height: 500px; /* ajusta la altura máxima según tus necesidades */
+    overflow-y: auto; /* agrega una barra de desplazamiento vertical si es necesario */
+}
+
+#tablaWrapper {
+    overflow-x: auto;
+    max-width: 100%; /* agrega una barra de desplazamiento horizontal si es necesario */
+}

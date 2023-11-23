@@ -28,7 +28,7 @@ connection.connect((err) => {
 
 app.post('/register', async (req, res, next) => {
   try {
-    const { cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip } = req.body;
+    const { cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username } = req.body;
 
     // Imprime en la consola los datos que se están recibiendo
     console.log('Datos recibidos en el servidor:', {
@@ -39,10 +39,11 @@ app.post('/register', async (req, res, next) => {
       email: typeof email,
       password: typeof password,
       itip: typeof itip,
+      username: typeof username,
     });
 
-    const sql = 'INSERT INTO usuarios (cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    connection.query(sql, [cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip], (err, result) => {
+    const sql = 'INSERT INTO usuarios (cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    connection.query(sql, [cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username], (err, result) => {
       if (err) {
         console.error('Error al registrar al usuario:', err);
         res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
@@ -57,6 +58,47 @@ app.post('/register', async (req, res, next) => {
   }
 });
 
+// Ruta para verificar correo electrónico
+app.get('/checkEmail', (req, res) => {
+  try {
+      const { email } = req.query;
+      
+      // Ejecutar consulta SQL
+      connection.query('SELECT * FROM usuarios WHERE email = ?', [email], (error, results) => {
+          if (error) {
+              console.error('Error en la consulta de correo electrónico:', error);
+              res.status(500).json({ error: 'Error en el servidor' });
+          } else {
+              res.json({ exists: results.length > 0 });
+          }
+      });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// Ruta para verificar nombre de usuario
+app.get('/checkUsername', (req, res) => {
+  try {
+      const { username } = req.query;
+      
+      // Ejecutar consulta SQL
+      connection.query('SELECT * FROM usuarios WHERE username = ?', [username], (error, results) => {
+          if (error) {
+              console.error('Error en la consulta de nombre de usuario:', error);
+              res.status(500).json({ error: 'Error en el servidor' });
+          } else {
+              res.json({ exists: results.length > 0 });
+          }
+      });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+
 // ... Código existente ...
 
 let authenticatedUserId; // Variable para almacenar el ID del usuario autenticado
@@ -64,50 +106,48 @@ let authenticatedUserId; // Variable para almacenar el ID del usuario autenticad
 // ... Código existente ...
 
 app.post('/authenticate', async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-        const sql = 'SELECT id, password, itip FROM usuarios WHERE email = ?'; // Selecciona el ID del usuario en la consulta
-        connection.query(sql, [email], async (err, results) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
-            }
-            if (results.length === 0) {
-                return res.status(404).json({ error: 'Usuario no encontrado.' });
-            }
+  try {
+      const { email, password } = req.body;
+      const sql = 'SELECT id, password, itip FROM usuarios WHERE email = ?';
+      connection.query(sql, [email], async (err, results) => {
+          if (err) {
+              return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+          }
+          if (results.length === 0) {
+              return res.status(404).json({ error: 'Usuario no encontrado.' });
+          }
 
-            const user = results[0];
-            authenticatedUserId = user.id; // Almacena el ID del usuario en la variable authenticatedUserId
+          const user = results[0];
+          const storedPassword = user.password;
 
-            const storedPassword = user.password;
+          // Compare entered password with the stored password
+          if (password !== storedPassword) {
+              return res.status(401).json({ error: 'Contraseña incorrecta.' });
+          }
 
-            // Comparar las contraseñas de manera exacta (sensible a mayúsculas y minúsculas)
-            if (password !== storedPassword) {
-                return res.status(401).json({ error: 'Credenciales incorrectas.' });
-            }
+          authenticatedUserId = user.id;
+          const itip = user.itip;
 
-            const itip = user.itip;
-            console.log(`usuario autenticado - email: ${email}, itip: ${itip}, userId: ${authenticatedUserId}`);
+          console.log(`usuario autenticado - email: ${email}, password: ${password}, itip: ${itip}, userId: ${authenticatedUserId}`);
 
-            if (itip === 1) {
-                res.status(200).json({ success: true, itip: 1, userId: authenticatedUserId });
-            } else {
-                // Obtén los formularios relacionados con el ID del usuario
-                connection.query('SELECT * FROM solicitudes WHERE id_usuario = ?', [authenticatedUserId], (err, results) => {
-                    if (err) {
-                        console.error('Error al obtener los formularios del usuario:', err);
-                        res.status(500).json({ error: 'Error al obtener los formularios del usuario. Por favor, inténtelo de nuevo más tarde.' });
-                    } else {
-                        const formIds = results.map(result => result.id);
-                        // Envía los IDs de los formularios al cliente
-                        res.status(200).json({ success: true, itip: 0, userId: authenticatedUserId, formIds: formIds });
-                    }
-                });
-            }
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
-    }
+          if (itip === 1) {
+              res.status(200).json({ success: true, itip: 1, userId: authenticatedUserId });
+          } else {
+              connection.query('SELECT * FROM solicitudes WHERE id_usuario = ?', [authenticatedUserId], (err, results) => {
+                  if (err) {
+                      console.error('Error al obtener los formularios del usuario:', err);
+                      res.status(500).json({ error: 'Error al obtener los formularios del usuario. Por favor, inténtelo de nuevo más tarde.' });
+                  } else {
+                      const formIds = results.map(result => result.id);
+                      res.status(200).json({ success: true, itip: 0, userId: authenticatedUserId, formIds: formIds });
+                  }
+              });
+          }
+      });
+  } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+  }
 });
 
 
@@ -472,8 +512,20 @@ app.get('/fetch_requests_admin', (req, res) => {
 
 app.post('/guardar_cotizacion', (req, res) => {
   try {
-      const { fecha, tipo, descripcion, condiciones_pago, garantia, tiempo_entrega, monto_total, id_cliente} = req.body;
+      const { fecha, tipo, descripcion, condiciones_pago, garantia, tiempo_entrega, monto_total, id_cliente } = req.body;
       const id_usuario = authenticatedUserId; // Obtén el ID del usuario autenticado desde la variable authenticatedUserId
+
+      // Agrega los console.log para imprimir los datos
+      console.log('Datos recibidos para cotización:');
+      console.log('Fecha:', fecha);
+      console.log('Tipo:', tipo);
+      console.log('Descripción:', descripcion);
+      console.log('Condiciones de pago:', condiciones_pago);
+      console.log('Garantía:', garantia);
+      console.log('Fecha de entrega:', tiempo_entrega);
+      console.log('Monto total:', monto_total);
+      console.log('ID de cliente:', id_cliente);
+
       const sql = 'INSERT INTO cotizaciones (id_usuario, fecha, tipo, descripcion, condiciones_pago, garantia, tiempo_entrega, monto_total, id_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
       connection.query(sql, [id_usuario, fecha, tipo, descripcion, condiciones_pago, garantia, tiempo_entrega, monto_total, id_cliente], (err, result) => {
           if (err) {
@@ -508,8 +560,9 @@ app.post('/guardar_cotizacion', (req, res) => {
   }
 });
 
+
 // Endpoint para obtener cotizaciones enviadas
-app.get('/fetch_requests_enviados', (req, res) => {
+app.get('/fetch_requests_enviados', (req, res) => { 
   const id_usuario = authenticatedUserId; // Obtén el ID del usuario autenticado desde la variable authenticatedUserId
   console.log('ID de usuario autenticado:', id_usuario); // Agrega un console.log para imprimir el ID de usuario
 
@@ -563,10 +616,93 @@ app.get('/fetch_request_details', (req, res) => {
 });
 */
 
+// Función para obtener datos de clientes
+function obtenerDatosDeClientes(callback) {
+  const query = 'SELECT * FROM usuarios';
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Error al obtener datos de clientes:', error);
+      callback(error, null);
+    } else {
+      console.log('Datos de clientes obtenidos con éxito:', results);
+      callback(null, results);
+    }
+  });
+}
+
+// Función para obtener datos de solicitudes
+function obtenerDatosDeSolicitudes(callback) {
+  const query = 'SELECT * FROM solicitudes';
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Error al obtener datos de solicitudes:', error);
+      callback(error, null);
+    } else {
+      console.log('Datos de solicitudes obtenidos con éxito:', results);
+      callback(null, results);
+    }
+  });
+}
+
+// Función para obtener datos de cotizaciones
+function obtenerDatosDeCotizaciones(callback) {
+  const query = 'SELECT * FROM cotizaciones';
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Error al obtener datos de cotizaciones:', error);
+      callback(error, null);
+    } else {
+      console.log('Datos de cotizaciones obtenidos con éxito:', results);
+      callback(null, results);
+    }
+  });
+}
+
+// Ruta para obtener datos de reporte
+app.get('/api/reporte', (req, res) => {
+  const tipoReporte = req.query.tipoReporte;
+
+  switch (tipoReporte) {
+    case 'clientes':
+      obtenerDatosDeClientes((error, datos) => {
+        if (error) {
+          console.error('Error al obtener datos de clientes:', error);
+          res.status(500).json({ error: 'Error interno del servidor al obtener datos de clientes' });
+        } else {
+          res.json(datos);
+        }
+      });
+      break;
+    case 'solicitudes':
+      obtenerDatosDeSolicitudes((error, datos) => {
+        if (error) {
+          console.error('Error al obtener datos de solicitudes:', error);
+          res.status(500).json({ error: 'Error interno del servidor al obtener datos de solicitudes' });
+        } else {
+          res.json(datos);
+        }
+      });
+      break;
+    case 'cotizaciones':
+      obtenerDatosDeCotizaciones((error, datos) => {
+        if (error) {
+          console.error('Error al obtener datos de cotizaciones:', error);
+          res.status(500).json({ error: 'Error interno del servidor al obtener datos de cotizaciones' });
+        } else {
+          res.json(datos);
+        }
+      });
+      break;
+    default:
+      res.status(400).json({ error: 'Tipo de informe no válido' });
+  }
+});
+
+
 // Endpoint para obtener solicitudes
 app.get('/fetch_requests_solicitudes', (req, res) => {
   // Lógica para obtener solicitudes desde la base de datos con istatus específico
-  const istatus = 1; // Ajusta esto según tu lógica
+  const istatus = 0; // Ajusta esto según tu lógica
   console.log('Istatus utilizado para solicitudes:', istatus); // Agrega un console.log para imprimir el istatus
 
   // Realiza la consulta a la base de datos para obtener solicitudes con istatus específico

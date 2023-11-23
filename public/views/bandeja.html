@@ -24,9 +24,9 @@
                         class=" lead"> </ion-icon>Formulario</a>
                 <a href="bandeja.html" class="d-block text-light p-4"><ion-icon name="archive"
                         class=" lead "> </ion-icon>Bandeja de entrada</a>
-                <a href="configuracion.html" class="d-block text-light p-4"><ion-icon name="settings"
-                        class="lead" ></ion-icon>Configuración</a>
-                <a href="#" class="d-block text-light p-4 position-absolute bottom-0"><ion-icon name="person"
+                <a href="reportes.html" class="d-block text-light p-4"><ion-icon name="albums"
+                        class="lead" ></ion-icon>Reportes</a>
+                <a href="../index.html" class="d-block text-light p-4 position-absolute bottom-0"><ion-icon name="person"
                         class=" lead" ></ion-icon>Cerrar sesión</a>
             </div>
         </div>
@@ -83,40 +83,50 @@
     -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            function cargarContenido(data) {
+            function cargarContenido(data, esSolicitud) {
                 const bandejaContent = document.getElementById('bandejaContent');
                 bandejaContent.innerHTML = ''; // Limpiar el contenido existente
     
+                data.sort((a, b) => b.id - a.id);
+    
                 data.forEach(item => {
+                    const fecha = new Date(item.fecha);
+                    const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+    
+                    const tiempoEntrega = item.tiempo_entrega ? new Date(item.tiempo_entrega) : null;
+                    const tiempoEntregaFormateado = tiempoEntrega
+                        ? `${tiempoEntrega.getDate()}/${tiempoEntrega.getMonth() + 1}/${tiempoEntrega.getFullYear()}`
+                        : '';
+    
                     bandejaContent.innerHTML += `
-                      <div class="categoria">
-                        <div class="categoria-contenido">
-                          <p class="categoria-texto">
-                            ID: ${item.id}<br>
-                            Fecha: ${item.fecha}<br>
-                            Tipo: ${item.tipo}<br>
-                            Descripción: ${item.descripcion}<br>
-                            ${item.condiciones_pago ? `Condiciones de Pago: ${item.condiciones_pago}<br>` : ''}
-                            ${item.garantia ? `Garantía: ${item.garantia}<br>` : ''}
-                            ${item.tiempo_entrega ? `Tiempo de Entrega: ${item.tiempo_entrega}<br>` : ''}
-                            ${item.monto_total ? `Monto Total: ${item.monto_total}<br>` : ''}
-                            ${item.istatus ? `Estado: ${item.istatus}<br>` : ''}
-                            ${item.usuario ? `Usuario: ${item.usuario}<br>` : ''}
-                            <hr>
-                          </p>
+                        <div class="categoria">
+                            <div class="categoria-contenido">
+                                <p class="categoria-texto" style="font-weight: bold;">
+                                    <strong>ID de Cotización:</strong> ${item.id}<br>
+                                    <strong>Fecha:</strong> ${fechaFormateada}<br>
+                                    ${esSolicitud ? `<strong>Tipo de Requerimiento:</strong> ${item.tipo_de_requerimiento}<br>` : ''}
+                                    <strong>Descripción:</strong> ${item.descripcion}<br>
+                                    ${item.condiciones_pago ? `<strong>Condiciones de Pago:</strong> ${item.condiciones_pago}<br>` : ''}
+                                    ${item.garantia ? `<strong>Garantía:</strong> ${item.garantia}<br>` : ''}
+                                    ${tiempoEntregaFormateado ? `<strong>Tiempo de Entrega:</strong> ${tiempoEntregaFormateado}<br>` : ''}
+                                    ${item.monto_total ? `<strong>Monto Total:</strong> ${item.monto_total}<br>` : ''}
+                                    ${item.istatus ? `<strong>Estado:</strong> ${item.istatus}<br>` : ''}
+                                    ${esSolicitud ? `<strong>ID de Usuario:</strong> ${item.id_usuario}<br>` : `<strong>ID de Cliente:</strong> ${item.id_cliente}<br>`}
+                                    <hr>
+                                </p>
+                            </div>
                         </div>
-                      </div>`;
+                    `;
                 });
             }
     
-            function cargarSolicitudes(url) {
+            function cargarSolicitudes(url, esSolicitud) {
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
-                        cargarContenido(data);
+                        cargarContenido(data, esSolicitud);
                     })
                     .catch(error => {
                         console.error('Error al cargar contenido:', error);
@@ -124,37 +134,31 @@
             }
     
             // Cargar solicitudes al cargar la página
-            cargarSolicitudes('/fetch_requests_solicitudes');
+            cargarSolicitudes('/fetch_requests_solicitudes', true);
     
             // Agregar eventos de clic a los enlaces de "Entrada", "Enviados", "Aceptados" y "Rechazados"
             const entradaLink = document.querySelector('.nav-item:nth-child(1) a');
             entradaLink.addEventListener('click', function (event) {
                 event.preventDefault();
-                cargarSolicitudes('/fetch_requests_solicitudes');
+                cargarSolicitudes('/fetch_requests_solicitudes', true);
             });
     
             const enviadosLink = document.querySelector('.nav-item:nth-child(2) a');
             enviadosLink.addEventListener('click', function (event) {
                 event.preventDefault();
-                cargarSolicitudes('/fetch_requests_enviados');
+                cargarSolicitudes('/fetch_requests_enviados', false);
             });
     
             const aceptadosLink = document.querySelector('.nav-item:nth-child(3) a');
             aceptadosLink.addEventListener('click', function (event) {
                 event.preventDefault();
-                cargarSolicitudes('/fetch_requests_aceptados');
+                cargarSolicitudes('/fetch_requests_aceptados', false);
             });
     
             const rechazadosLink = document.querySelector('.nav-item:nth-child(4) a');
             rechazadosLink.addEventListener('click', function (event) {
                 event.preventDefault();
-                cargarSolicitudes('/fetch_requests_rechazados');
+                cargarSolicitudes('/fetch_requests_rechazados', false);
             });
         });
     </script>
-    </body>
-    
-    </html>
-</body>
-
-</html>

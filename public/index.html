@@ -115,7 +115,7 @@
 							<input name="telefono" type="text" placeholder="Teléfono" />
 						</div>
 						<div class="input_box">
-							<input name='direccion' type="text" placeholder="Dirección" />
+							<input name='username' type="text" placeholder="Username" />
 						</div>
 						<input name='itip' type="hidden" value="0" />
 						<div class="input_box">
@@ -198,14 +198,15 @@
 							<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
 						</div>
 					</div>
-					<div class="categoria" onclick="toggleCategoria('pendientes')">
+					<!--
+					<div class="categoria categoria-pendientes" onclick="toggleCategoria('pendientes')">
 						<h3 class="categoria-titulo">Cotizaciones Pendientes</h3>
 						<div id="pendientes" class="categoria-contenido" style="display: none;">
-							<!-- Aquí mostramos el ID del formulario -->
-							<p class="categoria-texto">Contenido de cotizaciones rechazadas.</p>
+							<p class="categoria-texto">Contenido de cotizaciones pendientes.</p>
 						</div>
 					</div>
-					<div class="categoria" onclick="toggleCategoria('recibidas')">
+					-->
+					<div class="categoria categoria-aceptadas" onclick="toggleCategoria('recibidas')">
 						<h3 class="categoria-titulo">Cotizaciones Recibidas</h3>
 						<div id="recibidas" class="categoria-contenido" style="display: none;">
 							<!-- Aquí se mostrará el contenido de cotizaciones recibidas -->
@@ -546,34 +547,105 @@
 function registerUser(event) {
     event.preventDefault();
 
-	const formData = {
+    // Obtener los valores de los campos de contraseña y confirmación de contraseña
+    const password = document.querySelector('#register-form input[name="password"]').value;
+    const confirmPassword = document.querySelector('#register-form input[name="password_confirmation"]').value;
+
+    // Verificar si las contraseñas coinciden
+    if (password !== confirmPassword) {
+        // Mostrar mensaje de error en el formulario de registro
+        const registrationMessage = document.getElementById('registrationMessage');
+        registrationMessage.textContent = 'Las contraseñas no coinciden. Por favor, inténtelo de nuevo.';
+        registrationMessage.style.color = 'red';
+        registrationMessage.style.display = 'block';
+
+        // Ocultar el mensaje de error después de 5 segundos
+        setTimeout(() => {
+            registrationMessage.style.display = 'none';
+        }, 5000);
+
+        // Detener la ejecución del resto del código
+        return;
+    }
+
+  // Obtener el correo electrónico y el nombre de usuario para verificar
+  	const emailToCheck = document.querySelector('#register-form input[name="email"]').value;
+    const usernameToCheck = document.querySelector('#register-form input[name="username"]').value;
+
+	fetch(`/checkEmail?email=${encodeURIComponent(emailToCheck)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.exists) {
+            // Mostrar mensaje de error en el formulario de registro
+            const registrationMessage = document.getElementById('registrationMessage');
+            registrationMessage.textContent = 'Este correo electrónico ya está registrado. Por favor, use otro.';
+            registrationMessage.style.color = 'red';
+            registrationMessage.style.display = 'block';
+
+            // Ocultar el mensaje de error después de 5 segundos
+            setTimeout(() => {
+                registrationMessage.style.display = 'none';
+            }, 5000);
+
+            // Lanzar una excepción para interrumpir la ejecución del resto del código
+            throw new Error('Correo electrónico duplicado');
+        }
+
+        // Continuar con el resto del código si el correo electrónico no está duplicado
+        // ...
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Puedes manejar errores adicionales aquí si es necesario
+    });
+
+	// Verificar si el nombre de usuario ya está registrado
+	fetch(`/checkUsername?username=${encodeURIComponent(usernameToCheck)}`)
+		.then(response => response.json())
+		.then(data => {
+			if (data.exists) {
+				// Mostrar mensaje de error en el formulario de registro
+				const registrationMessage = document.getElementById('registrationMessage');
+				registrationMessage.textContent = 'Este nombre de usuario ya está registrado. Por favor, elija otro.';
+				registrationMessage.style.color = 'red';
+				registrationMessage.style.display = 'block';
+
+				// Ocultar el mensaje de error después de 5 segundos
+				setTimeout(() => {
+					registrationMessage.style.display = 'none';
+				}, 5000);
+
+				// Lanzar una excepción para interrumpir la ejecución del resto del código
+				throw new Error('Nombre de usuario duplicado');
+			}
+
+			// Continuar con el resto del código si el nombre de usuario no está duplicado
+			// ...
+		})
+		.catch(error => {
+			console.error('Error:', error);
+			// Puedes manejar errores adicionales aquí si es necesario
+		});
+
+
+    // Si las contraseñas coinciden, continuar con la solicitud de registro
+    const formData = {
         cedula_rif: document.querySelector('#register-form input[name="cedula_rif"]').value,
         nombre_razon_social: document.querySelector('#register-form input[name="nombre_razon_social"]').value,
         telefono: document.querySelector('#register-form input[name="telefono"]').value,
-        direccion: document.querySelector('#register-form input[name="direccion"]').value,
+        username: document.querySelector('#register-form input[name="username"]').value,
         email: document.querySelector('#register-form input[name="email"]').value,
         itip: document.querySelector('#register-form input[name="itip"]').value || "0",
-        password: document.querySelector('#register-form input[name="password"]').value,
-        confirmPassword: document.querySelector('#register-form input[name="password_confirmation"]').value,
+        password: password,
+        confirmPassword: confirmPassword,
     };
-
-    console.log('Datos enviados de el front:', formData);
 
     fetch('/register', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            cedula_rif: document.querySelector('input[name="cedula_rif"]').value,
-            nombre_razon_social: document.querySelector('input[name="nombre_razon_social"]').value,
-            telefono: document.querySelector('input[name="telefono"]').value,
-            direccion: document.querySelector('input[name="direccion"]').value,
-            email: document.querySelector('#register-form input[name="email"]').value,
-            itip: document.querySelector('input[name="itip"]').value || "0",
-			password: document.querySelector('#register-form input[name="password"]').value,
-
-        }),
+        body: JSON.stringify(formData),
     })
     .then(response => {
         if (!response.ok) {
@@ -590,15 +662,14 @@ function registerUser(event) {
             registrationMessage.style.color = 'green';
             registrationMessage.style.display = 'block';
 
-			// Limpiar los campos del formulario después del registro
-			document.querySelector('input[name="cedula_rif"]').value = '';
-			document.querySelector('input[name="nombre_razon_social"]').value = '';
-			document.querySelector('input[name="telefono"]').value = '';
-			document.querySelector('input[name="direccion"]').value = '';
-			document.querySelector('#register-form input[name="email"]').value = '';
-			document.querySelector('#register-form input[name="password"]').value = '';  // Corregir aquí
-			document.querySelector('input[name="password_confirmation"]').value = '';
-
+            // Limpiar los campos del formulario después del registro
+            document.querySelector('#register-form input[name="cedula_rif"]').value = '';
+            document.querySelector('#register-form input[name="nombre_razon_social"]').value = '';
+            document.querySelector('#register-form input[name="telefono"]').value = '';
+            document.querySelector('#register-form input[name="username"]').value = '';
+            document.querySelector('#register-form input[name="email"]').value = '';
+            document.querySelector('#register-form input[name="password"]').value = '';
+            document.querySelector('#register-form input[name="password_confirmation"]').value = '';
 
             // Ocultar el mensaje de éxito después de 5 segundos
             setTimeout(() => {
@@ -624,6 +695,7 @@ function registerUser(event) {
         }, 5000);
     });
 }
+
 </script>
 
 <script>
@@ -632,11 +704,14 @@ function registerUser(event) {
 	document.querySelector('#register-form input[name="cedula_rif"]').value = '';
 	document.querySelector('#register-form input[name="nombre_razon_social"]').value = '';
 	document.querySelector('#register-form input[name="telefono"]').value = '';
-	document.querySelector('#register-form input[name="direccion"]').value = '';
+	document.querySelector('#register-form input[name="username"]').value = '';
 	document.querySelector('#register-form input[name="email"]').value = '';
 	document.querySelector('#register-form input[name="itip"]').value = '';
 	document.querySelector('#register-form input[name="password"]').value = '';
 	document.querySelector('#register-form input[name="password_confirmation"]').value = ''; 
+
+	document.querySelector('#login-form input[name="email"]').value = '';
+	document.querySelector('#login-form input[name="password"]').value = '';
 
 	overlay.style.display = 'flex';
 	}
@@ -727,16 +802,26 @@ function submitForm(event) {
             throw new Error(data.error); // Manejar el error específico enviado desde el servidor
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        // Mostrar mensaje de error en el formulario
-		document.querySelector('.form-container').innerHTML = '<div id="login-form"> <h2>¡Bienvenido!</h2> <p>Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.</p> <form action="/authenticate" method="POST" onsubmit="hideForm()"> <div class="input_box"> <input name="email" type="email" placeholder="Correo electrónico" required /> <i class="uil uil-envelope-alt email"></i> </div> <div class="input_box"> <input name="password" type="password" placeholder="Contraseña" required /> <i class="uil uil-lock password"></i> <i class="uil uil-eye-slash pw_hide"></i> </div> <input type="hidden" name="itip"> <div class="option_field"> <span class="checkbox"> <input type="checkbox" id="check" /> <label for="check">Recordarme</label> </span> <a href="#" class="forgot_pw">¿Olvidaste tu contraseña?</a> </div> <button type="submit" class="btn btn-primary" onclick="submitForm(event)" id="loginButtonaa">Iniciar sesión</button> </form> <div class="toggle-btn" onclick="toggleForm()">¿Aún no tienes cuenta? Regístrate aquí</div> <div class="close-btn" onclick="closeForm()">X</div> </div>';
+	.catch(error => {
+    console.error('Error:', error);
+    // Mostrar mensaje de error en el formulario
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.createElement('p');
+    errorMessage.style.color = 'red';
+    errorMessage.textContent = 'Ha ocurrido un error durante la autenticación. Por favor, inténtelo de nuevo.';
+    loginForm.appendChild(errorMessage);
 
-
-    });
+	setTimeout(() => {
+        errorMessage.remove();
+    }, 3000);
+});
 }
 
 function datosBandeja(formIds) {
+    // Limpiar el contenido de cada categoría antes de recibir nuevos datos
+    document.getElementById('aceptadas').innerHTML = '';
+    document.getElementById('rechazadas').innerHTML = '';
+    document.getElementById('recibidas').innerHTML = '';
 
     formIds.forEach(formId => {
         fetch('/fetch_request_details', {
@@ -756,6 +841,7 @@ function datosBandeja(formIds) {
         })
         .then(details => {
             details.solicitudes.forEach(solicitud => {
+				/*
                 // Mostrar detalles de solicitudes
                 if (solicitud.istatus === 0) {
                     // Agregar a la categoría 'pendientes' solo si istatus es 0
@@ -767,6 +853,7 @@ function datosBandeja(formIds) {
                         Nota: ${solicitud.nota}<br><hr>
                     `;
                 }
+				*/
             });
 
             details.cotizaciones.forEach(cotizacion => {
