@@ -15,13 +15,36 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
 
+    <title>Montayreca</title>
 
+    <script>
+		document.addEventListener('DOMContentLoaded', function () {
+		try {
+			const userInfoString = localStorage.getItem('userInfo');
+			console.log('User info string:', userInfoString);
 
+			if (userInfoString) {
+			const userInfo = JSON.parse(userInfoString);
+			const { email, password } = userInfo;
 
+			console.log('Attempting login with:', email, password);
 
-
-
-    <title>Montayreca - Reportes</title>
+			// Realiza el inicio de sesión automático
+			login(email, password)
+				.then(() => {
+				console.log('Usuario autenticado automáticamente:', email, password);
+				// Realiza acciones adicionales según la información del usuario
+				})
+				.catch((error) => {
+				console.error('Error al iniciar sesión automáticamente:', error.message);
+				console.log('Full error details:', error); // Add this line to log the full error details
+				});
+			}
+		} catch (error) {
+			console.error('Error en el script:', error);
+		}
+		});
+		</script>
 </head>
 
 <body>
@@ -37,8 +60,9 @@
                         class=" lead "> </ion-icon>Bandeja de entrada</a>
                 <a href="reportes.html" class="d-block text-light p-4"><ion-icon name="albums"
                         class="lead" ></ion-icon>Reportes</a>
-                <a href="../index.html" class="d-block text-light p-4 position-absolute bottom-0"><ion-icon name="person"
-                        class=" lead" ></ion-icon>Cerrar sesión</a>
+                <a href="#" id="logoutLink" class="d-block text-light p-4 position-absolute bottom-0">
+                    <ion-icon name="person" class="lead"></ion-icon>Cerrar sesión
+                    </a>
             </div>
         </div>
         <div class="w-100">
@@ -53,11 +77,13 @@
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <!-- Tus elementos de menú -->
                         </ul>
+                        <!--
                         <form class="d-flex" role="search">
                             <input class="form-control me-2" type="search" placeholder="Search"
                                 aria-label="Search">
                             <button class="btn btn-warning fs-6 " type="submit">Search</button>
                         </form>
+                        -->
                     </div>
                 </div>
             </nav>
@@ -72,6 +98,7 @@
                         <option value="clientes">Clientes</option>
                         <option value="solicitudes">Solicitudes</option>
                         <option value="cotizaciones">Cotizaciones</option>
+                        <option value="administradores">Administradores</option>
                     </select>
                 </div>
                 <br>
@@ -121,6 +148,9 @@ document.getElementById('generarReporte').addEventListener('click', function () 
                 case 'cotizaciones':
                     tablaContainer.innerHTML = generarTablaCotizaciones(data);
                     break;
+                case 'administradores':
+                    tablaContainer.innerHTML = generarTablaAdministradores(data);
+                    break;
                 default:
                     tablaContainer.innerHTML = '<p>Tipo de informe no válido.</p>';
                     break;
@@ -161,6 +191,8 @@ function generarTablaSolicitudes(data) {
     let tableHTML = '<table class="table">' +
         '<thead><tr>' +
         '<th>ID de Solicitud</th>' +
+        '<th>ID del Cliente</th>' +
+        '<th>Nombre del Cliente</th>' +
         '<th>Fecha</th>' +
         '<th>Tipo de Requerimiento</th>' +
         '<th>Descripción</th>' +
@@ -172,7 +204,30 @@ function generarTablaSolicitudes(data) {
     data.forEach(solicitud => {
         // Formatear la fecha como "día mes año"
         const fechaFormateada = new Date(solicitud.fecha).toLocaleDateString();
-        tableHTML += `<tr>${crearCelda(solicitud.id)}${crearCelda(fechaFormateada)}${crearCelda(solicitud.tipo_de_requerimiento)}${crearCelda(solicitud.descripcion)}${crearCelda(solicitud.nota)}</tr>`;
+        tableHTML += `<tr>${crearCelda(solicitud.id)}${crearCelda(solicitud.id_usuario)}${crearCelda(solicitud.nombre_razon_social)}${crearCelda(fechaFormateada)}${crearCelda(solicitud.tipo_de_requerimiento)}${crearCelda(solicitud.descripcion)}${crearCelda(solicitud.nota)}</tr>`;
+    });
+
+    tableHTML += '</tbody></table>';
+    return tableHTML;
+}
+
+function generarTablaAdministradores(data) {
+    // Estructura HTML específica para administradores
+    // Puedes personalizar esta estructura según tus necesidades
+    let tableHTML = '<table class="table">' +
+        '<thead><tr>' +
+        '<th>ID del Administrador</th>' +
+        '<th>Nombre</th>' +
+        '<th>CI o RIF</th>' +
+        '<th>Username</th>' +
+        '<th>Email</th>' +
+        '<th>Teléfono</th>' +
+        '</tr></thead>' +
+        '<tbody>';
+
+    // Recorrer los datos y agregar filas a la tabla
+    data.forEach(administrador => {
+        tableHTML += `<tr>${crearCelda(administrador.id)}${crearCelda(administrador.nombre_razon_social)}${crearCelda(administrador.cedula_rif)}${crearCelda(administrador.username)}${crearCelda(administrador.email)}${crearCelda(administrador.telefono)}</tr>`;
     });
 
     tableHTML += '</tbody></table>';
@@ -185,9 +240,14 @@ function generarTablaCotizaciones(data) {
     let tableHTML = '<table class="table">' +
         '<thead><tr>' +
         '<th>ID de Cotización</th>' +
+        '<th>ID del Cliente</th>' +
+        '<th>Nombre del Cliente</th>' +
         '<th>Fecha</th>' + 
         '<th>Tipo</th>' +
         '<th>Descripción</th>' +
+        '<th>Condiciones de Pago</th>' +
+        '<th>Garantía</th>' +
+        '<th>Tiempo de Entrega</th>' +
         '<th>Monto Total</th>' +
         '</tr></thead>' +
         '<tbody>';
@@ -195,7 +255,8 @@ function generarTablaCotizaciones(data) {
     // Recorrer los datos y agregar filas a la tabla
     data.forEach(cotizacion => {
         const fechaFormateada = new Date(cotizacion.fecha).toLocaleDateString();
-        tableHTML += `<tr>${crearCelda(cotizacion.id)}${crearCelda(fechaFormateada)}${crearCelda(cotizacion.tipo)}${crearCelda(cotizacion.descripcion)}${crearCelda(cotizacion.monto_total)}</tr>`;
+        const entregaFormateada = new Date(cotizacion.tiempo_entrega).toLocaleDateString();
+        tableHTML += `<tr>${crearCelda(cotizacion.id)}${crearCelda(cotizacion.id_cliente)}${crearCelda(cotizacion.nombre_razon_social)}${crearCelda(fechaFormateada)}${crearCelda(cotizacion.tipo)}${crearCelda(cotizacion.descripcion)}${crearCelda(cotizacion.condiciones_pago)}${crearCelda(cotizacion.garantia)}${crearCelda(entregaFormateada)}${crearCelda(cotizacion.monto_total)}</tr>`;
     });
 
     tableHTML += '</tbody></table>';
@@ -257,3 +318,84 @@ function crearCelda(contenido) {
         return tableHTML;
     }
     </script>
+
+-->
+
+<script>
+    function login(email, password) {
+        // Devuelve una promesa para manejar la lógica asíncrona
+        return new Promise((resolve, reject) => {
+            // Realiza una solicitud al servidor para autenticar al usuario
+            fetch('/authenticate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                }),
+            })
+            .then(response => {
+                // Verifica si la respuesta es exitosa (código de estado 2xx)
+                if (response.ok) {
+                    // Parsea la respuesta JSON
+                    return response.json();
+                } else {
+                    // Rechaza la promesa con un mensaje de error
+                    throw new Error('Autenticación fallida');
+                }
+            })
+            .then(data => {
+                // Lógica adicional después de una autenticación exitosa
+                console.log('Usuario autenticado:', data);
+    
+                // Almacena información en localStorage después de la autenticación exitosa
+                const userInfo = {
+                    email: email,
+                    password: password,
+                    itip: data.itip,
+                    userId: data.userId,
+                };
+    
+                // Almacena la información en localStorage
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+    
+                console.log(`Usuario autenticado probando - email: ${userInfo.email}, itip: ${userInfo.itip}, userId: ${userInfo.userId}, password: ${userInfo.password}`);
+    
+                resolve(data);
+            })
+            .catch(error => {
+                // Rechaza la promesa con el mensaje de error
+                reject(error.message);
+            });
+        });
+    }
+        </script>
+    
+        
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          // ... your existing code ...
+        
+          // Attach a click event to the logout link
+          const logoutLink = document.getElementById('logoutLink');
+          if (logoutLink) {
+            logoutLink.addEventListener('click', logout);
+          }
+        });
+        
+        function logout(event) {
+          event.preventDefault();
+        
+          // Clear user information from local storage
+        
+        
+          // Perform any additional steps for logging out on the server-side (invalidate session/token)
+        
+          // Redirect to the login page
+          window.location.href = '../index.html'; // Change the URL to your login page
+            localStorage.removeItem('userInfo');
+        }
+        
+        </script>

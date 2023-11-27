@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const app = express();
 require('dotenv').config();
 
-const bcrypt = require('bcrypt');
 const mysql = require('mysql');
 const connection = mysql.createConnection({
   host: process.env.MYSQL_HOST,
@@ -25,45 +24,11 @@ connection.connect((err) => {
   }
   console.log('Conectado a la base de datos MySQL');
 });
-
-app.post('/register', async (req, res, next) => {
-  try {
-    const { cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username } = req.body;
-
-    // Imprime en la consola los datos que se están recibiendo
-    console.log('Datos recibidos en el servidor:', {
-      cedula_rif: typeof cedula_rif,
-      nombre_razon_social: typeof nombre_razon_social,
-      telefono: typeof telefono,
-      direccion: typeof direccion,
-      email: typeof email,
-      password: typeof password,
-      itip: typeof itip,
-      username: typeof username,
-    });
-
-    const sql = 'INSERT INTO usuarios (cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    connection.query(sql, [cedula_rif, nombre_razon_social, telefono, direccion, email, password, itip, username], (err, result) => {
-      if (err) {
-        console.error('Error al registrar al usuario:', err);
-        res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
-      } else {
-        console.log('Usuario registrado');
-        res.status(200).json({ message: 'Registro completado' });
-      }
-    });
-  } catch (error) {
-    console.error('Error al registrar al usuario:', error);
-    res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
-  }
-});
-
 // Ruta para verificar correo electrónico
 app.get('/checkEmail', (req, res) => {
   try {
       const { email } = req.query;
-      
-      // Ejecutar consulta SQL
+
       connection.query('SELECT * FROM usuarios WHERE email = ?', [email], (error, results) => {
           if (error) {
               console.error('Error en la consulta de correo electrónico:', error);
@@ -82,8 +47,7 @@ app.get('/checkEmail', (req, res) => {
 app.get('/checkUsername', (req, res) => {
   try {
       const { username } = req.query;
-      
-      // Ejecutar consulta SQL
+
       connection.query('SELECT * FROM usuarios WHERE username = ?', [username], (error, results) => {
           if (error) {
               console.error('Error en la consulta de nombre de usuario:', error);
@@ -98,6 +62,47 @@ app.get('/checkUsername', (req, res) => {
   }
 });
 
+// Ruta para registrar usuario
+app.post('/register', async (req, res, next) => {
+  try {
+      const { cedula_rif, nombre_razon_social, telefono, email, password, itip, username } = req.body;
+
+      console.log('Datos recibidos en el servidor:', {
+          cedula_rif: typeof cedula_rif,
+          nombre_razon_social: typeof nombre_razon_social,
+          telefono: typeof telefono,
+          email: typeof email,
+          password: typeof password,
+          itip: typeof itip,
+          username: typeof username,
+      });
+
+      const sql = 'INSERT INTO usuarios (cedula_rif, nombre_razon_social, telefono, email, password, itip, username) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        connection.query(sql, [cedula_rif, nombre_razon_social, telefono, email, password, itip, username], (err, result) => {
+            if (err) {
+                console.error('Error al registrar al usuario:', err);
+
+                if (err.code === 'ER_DUP_ENTRY') {
+                    let errorMessage = '';
+                    if (err.sqlMessage.includes('email')) {
+                        errorMessage = 'Correo electrónico duplicado';
+                    } else if (err.sqlMessage.includes('username')) {
+                        errorMessage = 'Nombre de usuario duplicado';
+                    }
+                    res.status(400).json({ error: errorMessage });
+                } else {
+                    res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
+                }
+            } else {
+                console.log('Usuario registrado');
+                res.status(200).json({ message: 'Registro completado' });
+            }
+        });
+    } catch (error) {
+        console.error('Error al registrar al usuario:', error);
+        res.status(500).json({ error: 'Error al registrar al usuario. Por favor, inténtelo de nuevo más tarde.' });
+    }
+});
 
 // ... Código existente ...
 
@@ -107,48 +112,51 @@ let authenticatedUserId; // Variable para almacenar el ID del usuario autenticad
 
 app.post('/authenticate', async (req, res, next) => {
   try {
-      const { email, password } = req.body;
-      const sql = 'SELECT id, password, itip FROM usuarios WHERE email = ?';
-      connection.query(sql, [email], async (err, results) => {
+    const { email, password } = req.body;
+    const sql = 'SELECT id, password, itip FROM usuarios WHERE email = ?';
+
+    connection.query(sql, [email], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado.' });
+      }
+
+      const user = results[0];
+      const storedPassword = user.password;
+
+      // Compare la contraseña ingresada con la contraseña almacenada
+      if (password !== storedPassword) {
+        return res.status(401).json({ error: 'Contraseña incorrecta.' });
+      }
+
+      authenticatedUserId = user.id;
+      const itip = user.itip;
+
+      console.log(`Usuario autenticado - email: ${email}, password: ${password}, itip: ${itip}, userId: ${authenticatedUserId}`);
+
+      if (itip === 1) {
+        res.status(200).json({ success: true, itip: 1, userId: authenticatedUserId });
+      } else {
+        connection.query('SELECT * FROM solicitudes WHERE id_usuario = ?', [authenticatedUserId], (err, results) => {
           if (err) {
-              return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
-          }
-          if (results.length === 0) {
-              return res.status(404).json({ error: 'Usuario no encontrado.' });
-          }
-
-          const user = results[0];
-          const storedPassword = user.password;
-
-          // Compare entered password with the stored password
-          if (password !== storedPassword) {
-              return res.status(401).json({ error: 'Contraseña incorrecta.' });
-          }
-
-          authenticatedUserId = user.id;
-          const itip = user.itip;
-
-          console.log(`usuario autenticado - email: ${email}, password: ${password}, itip: ${itip}, userId: ${authenticatedUserId}`);
-
-          if (itip === 1) {
-              res.status(200).json({ success: true, itip: 1, userId: authenticatedUserId });
+            console.error('Error al obtener los formularios del usuario:', err);
+            res.status(500).json({ error: 'Error al obtener los formularios del usuario. Por favor, inténtelo de nuevo más tarde.' });
           } else {
-              connection.query('SELECT * FROM solicitudes WHERE id_usuario = ?', [authenticatedUserId], (err, results) => {
-                  if (err) {
-                      console.error('Error al obtener los formularios del usuario:', err);
-                      res.status(500).json({ error: 'Error al obtener los formularios del usuario. Por favor, inténtelo de nuevo más tarde.' });
-                  } else {
-                      const formIds = results.map(result => result.id);
-                      res.status(200).json({ success: true, itip: 0, userId: authenticatedUserId, formIds: formIds });
-                  }
-              });
+            const formIds = results.map(result => result.id);
+            res.status(200).json({ success: true, itip: 0, userId: authenticatedUserId, formIds: formIds });
           }
-      });
+        });
+      }
+    });
   } catch (error) {
-      console.error('Error:', error);
-      return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
+    console.error('Error:', error);
+    return res.status(500).json({ error: 'Error en la autenticación del usuario. Por favor, inténtelo de nuevo más tarde.' });
   }
 });
+
 
 
 // ... Código existente ...
@@ -191,7 +199,7 @@ app.post('/submit_request', (req, res) => {
                                       Descripción: ${descripcion}<br>
                                       Nota: ${nota}
                                   </p>`;
-                              res.status(200).json({ formId: formId, message: 'El formulario de requerimientos se ha enviado correctamente', formDetails: formDetails });
+                              res.status(200).json({ formId: formId, message: 'El formulario se ha enviado correctamente', formDetails: formDetails });
                           }
                       });
                   }
@@ -204,10 +212,12 @@ app.post('/submit_request', (req, res) => {
   }
 });
 
-
 app.post('/fetch_request_details', (req, res) => {
   try {
     const { formId } = req.body;
+
+    // Log the received formId for debugging
+    console.log('Received formId:', formId);
 
     // Buscar en la tabla 'solicitudes'
     connection.query(
@@ -233,9 +243,12 @@ app.post('/fetch_request_details', (req, res) => {
             }));
           }
 
+          // Log the solicitudes data for debugging
+          console.log('Solicitudes Result:', responseData.solicitudes);
+
           // Buscar en la tabla 'cotizaciones'
           connection.query(
-            'SELECT id AS id, DATE_FORMAT(fecha, "%d %b %Y") AS fecha, tipo, descripcion, condiciones_pago, garantia, tiempo_entrega, monto_total, istatus, id_cliente FROM cotizaciones WHERE id = ? ORDER BY id',
+            'SELECT * FROM cotizaciones WHERE id_usuario = ? AND istatus = 3',
             [formId],
             (err, cotizacionesResult) => {
               if (err) {
@@ -244,7 +257,10 @@ app.post('/fetch_request_details', (req, res) => {
                   error: 'Error al obtener los detalles de la cotización. Por favor, inténtelo de nuevo más tarde.',
                 });
               } else {
-                if (cotizacionesResult.length > 0) {
+                // Log the cotizaciones data for debugging
+                console.log('Cotizaciones Result:', cotizacionesResult);
+
+                if (cotizacionesResult && cotizacionesResult.length > 0) {
                   responseData.cotizaciones = cotizacionesResult.map(cotizacion => ({
                     formId: cotizacion.id,
                     fecha: cotizacion.fecha,
@@ -259,7 +275,6 @@ app.post('/fetch_request_details', (req, res) => {
                   }));
                 }
 
-                console.log('Datos enviados:', responseData);
                 res.status(200).json(responseData);
               }
             }
@@ -275,6 +290,7 @@ app.post('/fetch_request_details', (req, res) => {
   }
 });
 
+/*
 app.get('/fetch_request_details', (req, res) => {
   try {
     const { formId } = req.body;
@@ -345,7 +361,7 @@ app.get('/fetch_request_details', (req, res) => {
   }
 });
 
-/*
+
 app.post('/fetch_request_details', (req, res) => {
   try {
     const { formId } = req.body;
@@ -437,25 +453,50 @@ app.post('/fetch_request_details', (req, res) => {
   }
 });
 */
+/*
 
 app.post('/update_form_status', (req, res) => {
   try {
-      const { formId, istatus } = req.body;
-      // Actualiza el estado del formulario en base al ID del formulario
+    const { formId, istatus } = req.body;
+
+    // Verificar si formId es un número entero
+    if (!Number.isInteger(formId) || formId <= 0) {
+      return res.status(400).json({ error: 'El ID del formulario no es válido.' });
+    }
+
+    // Verificar si istatus es un valor permitido según la lógica de tu aplicación
+    if (![1, 2, 3].includes(istatus)) {
+      return res.status(400).json({ error: 'El valor de istatus no es válido.' });
+    }
+
+    // Verificar si el formulario con el ID proporcionado existe en la base de datos
+    connection.query('SELECT id FROM cotizaciones WHERE id = ?', [formId], (err, rows) => {
+      if (err) {
+        console.error('Error al verificar la existencia del formulario:', err);
+        return res.status(500).json({ error: 'Error interno al verificar la existencia del formulario.' });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'El formulario no existe en la base de datos.' });
+      }
+
+      // Actualizar el estado del formulario en base al ID del formulario
       connection.query('UPDATE cotizaciones SET istatus = ? WHERE id = ?', [istatus, formId], (err, result) => {
-          if (err) {
-              console.error('Error al actualizar el estado del formulario:', err);
-              res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
-          } else {
-              console.log('Estado del formulario actualizado correctamente');
-              res.status(200).json({ message: 'Estado del formulario actualizado correctamente' });
-          }
+        if (err) {
+          console.error('Error al actualizar el estado del formulario:', err);
+          res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
+        } else {
+          console.log('Estado del formulario actualizado correctamente');
+          res.status(200).json({ message: 'Estado del formulario actualizado correctamente' });
+        }
       });
+    });
   } catch (error) {
-      console.error('Error:', error);
-      res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
   }
 });
+*/
 
 app.get('/fetch_bandeja_data', (req, res) => { 
   try {
@@ -551,7 +592,7 @@ app.post('/guardar_cotizacion', (req, res) => {
                       Monto total: ${monto_total}
                   </p>`;
 
-              res.status(200).json({ formId: formId, message: 'El formulario de requerimientos se ha enviado correctamente', formDetails: formDetails });
+              res.status(200).json({ formId: formId, message: 'El formulario ha enviado correctamente', formDetails: formDetails });
           }
       });
   } catch (error) {
@@ -561,6 +602,56 @@ app.post('/guardar_cotizacion', (req, res) => {
 });
 
 
+
+app.get('/fetch_requests_enviados', (req, res) => {
+  const id_usuario = authenticatedUserId;
+
+  const sql = 'SELECT * FROM cotizaciones WHERE id_usuario = ? AND istatus = 3';
+  connection.query(sql, [id_usuario], (err, cotizacionesResults) => {
+    if (err) {
+      console.error('Error al obtener cotizaciones aceptadas:', err);
+      res.status(500).json({ error: 'Error al obtener cotizaciones aceptadas. Por favor, inténtelo de nuevo más tarde.' });
+    } else {
+      console.log('Datos de cotizaciones aceptadas:', cotizacionesResults);
+
+      // Obtiene los id_cliente de las cotizaciones
+      const idClientes = cotizacionesResults.map(cotizacion => cotizacion.id_cliente);
+
+      // Verifica si la lista de idClientes está vacía
+      if (idClientes.length === 0) {
+        res.json(cotizacionesResults);
+        return;
+      }
+
+      // Realiza una consulta adicional para obtener el nombre_razon_social de los clientes
+      const clientesSql = 'SELECT id, nombre_razon_social FROM usuarios WHERE id IN (?)';
+      connection.query(clientesSql, [idClientes], (clientesErr, clientesResults) => {
+        if (clientesErr) {
+          console.error('Error al obtener clientes:', clientesErr);
+          res.status(500).json({ error: 'Error al obtener clientes.' });
+        } else {
+          console.log('Datos de clientes:', clientesResults);
+
+          // Combina los resultados de cotizaciones y clientes
+          const combinedResults = cotizacionesResults.map(cotizacion => {
+            const cliente = clientesResults.find(cliente => cliente.id === cotizacion.id_cliente);
+            return {
+              ...cotizacion,
+              nombre_razon_social: cliente ? cliente.nombre_razon_social : null,
+            };
+          });
+
+          res.json(combinedResults);
+        }
+      });
+    }
+  });
+});
+
+
+
+
+/*
 // Endpoint para obtener cotizaciones enviadas
 app.get('/fetch_requests_enviados', (req, res) => { 
   const id_usuario = authenticatedUserId; // Obtén el ID del usuario autenticado desde la variable authenticatedUserId
@@ -577,6 +668,75 @@ app.get('/fetch_requests_enviados', (req, res) => {
     }
   });
 });
+*/
+
+// Endpoint para obtener cotizaciones enviadas por el cliente autenticado
+app.get('/fetch_requests_cliente', (req, res) => { 
+  console.log('ID de usuario autenticado:', authenticatedUserId); // Agrega un console.log para imprimir el ID de usuario
+
+  const sql = 'SELECT * FROM cotizaciones WHERE id_cliente = ?';
+  connection.query(sql, [authenticatedUserId], (err, result) => {
+    if (err) {
+      console.error('Error al obtener cotizaciones enviadas:', err);
+      res.status(500).json({ error: 'Error al obtener cotizaciones enviadas. Por favor, inténtelo de nuevo más tarde.' });
+    } else {
+      console.log('Datos de cotizaciones enviadas:', result); // Agrega un console.log para imprimir los datos obtenidos
+      res.status(200).json(result);
+    }
+  });
+});
+
+app.post('/update_form_status', (req, res) => {
+  try {
+    const { formId, istatus } = req.body;
+
+    // Verificar si el formulario con el ID proporcionado existe en la base de datos
+    connection.query('SELECT id FROM cotizaciones WHERE id = ?', [formId], (err, rows) => {
+      if (err) {
+        console.error('Error al verificar la existencia del formulario:', err);
+        return res.status(500).json({ error: 'Error interno al verificar la existencia del formulario.' });
+      }
+
+      if (rows.length === 0) {
+        console.error('Error: El formulario no existe en la base de datos.');
+        return res.status(404).json({ error: 'El formulario no existe en la base de datos.' });
+      }
+
+      // Actualizar el estado del formulario en base al ID del formulario
+      connection.query('UPDATE cotizaciones SET istatus = ? WHERE id = ?', [istatus, formId], (err, result) => {
+        if (err) {
+          console.error('Error al actualizar el estado del formulario:', err);
+          res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
+        } else {
+          console.log('Estado del formulario actualizado correctamente');
+          res.status(200).json({ message: 'Estado del formulario actualizado correctamente' });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error al actualizar el estado del formulario. Por favor, inténtelo de nuevo más tarde.' });
+  }
+});
+
+app.get('/obtener_usuarios', (req, res) => {
+
+    // Realizar la consulta para obtener los nombres de usuarios y sus IDs
+    connection.query('SELECT id, nombre_razon_social FROM usuarios where itip=0', (error, results) => {
+      if (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+      } else {
+        // Log the users to the console
+        console.log('Usuarios obtenidos:', results);
+
+        // Retorna la lista de usuarios (ID y nombre) en formato JSON
+        res.json({ usuarios: results });
+      }
+    });
+  } 
+);
+
 
 /*
 app.get('/fetch_request_details', (req, res) => {
@@ -617,8 +777,23 @@ app.get('/fetch_request_details', (req, res) => {
 */
 
 // Función para obtener datos de clientes
+
+function obtenerDatosDeAdministradores(callback) {
+  const query = 'SELECT * FROM usuarios where itip=1';
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Error al obtener datos de clientes:', error);
+      callback(error, null);
+    } else {
+      console.log('Datos de clientes obtenidos con éxito:', results);
+      callback(null, results);
+    }
+  });
+}
+
+
 function obtenerDatosDeClientes(callback) {
-  const query = 'SELECT * FROM usuarios';
+  const query = 'SELECT * FROM usuarios where itip=0';
   connection.query(query, (error, results) => {
     if (error) {
       console.error('Error al obtener datos de clientes:', error);
@@ -632,7 +807,10 @@ function obtenerDatosDeClientes(callback) {
 
 // Función para obtener datos de solicitudes
 function obtenerDatosDeSolicitudes(callback) {
-  const query = 'SELECT * FROM solicitudes';
+  const query = 'SELECT solicitudes.*, usuarios.nombre_razon_social ' +
+                'FROM solicitudes ' +
+                'INNER JOIN usuarios ON solicitudes.id_usuario = usuarios.id';
+
   connection.query(query, (error, results) => {
     if (error) {
       console.error('Error al obtener datos de solicitudes:', error);
@@ -646,7 +824,10 @@ function obtenerDatosDeSolicitudes(callback) {
 
 // Función para obtener datos de cotizaciones
 function obtenerDatosDeCotizaciones(callback) {
-  const query = 'SELECT * FROM cotizaciones';
+  const query = 'SELECT cotizaciones.*, usuarios.nombre_razon_social ' +
+                'FROM cotizaciones ' +
+                'INNER JOIN usuarios ON cotizaciones.id_cliente = usuarios.id';
+
   connection.query(query, (error, results) => {
     if (error) {
       console.error('Error al obtener datos de cotizaciones:', error);
@@ -657,6 +838,7 @@ function obtenerDatosDeCotizaciones(callback) {
     }
   });
 }
+
 
 // Ruta para obtener datos de reporte
 app.get('/api/reporte', (req, res) => {
@@ -693,12 +875,68 @@ app.get('/api/reporte', (req, res) => {
         }
       });
       break;
+    case 'administradores':
+      obtenerDatosDeAdministradores((error, datos) => {
+        if (error) {
+          console.error('Error al obtener datos de administradores:', error);
+          res.status(500).json({ error: 'Error interno del servidor al obtener datos de administradores' });
+        } else {
+          res.json(datos);
+        }
+      });
+      break;
     default:
       res.status(400).json({ error: 'Tipo de informe no válido' });
   }
 });
 
 
+// Endpoint para obtener solicitudes con información de usuarios
+app.get('/fetch_requests_solicitudes', (req, res) => {
+  // Lógica para obtener solicitudes desde la base de datos con istatus específico
+  const istatus = [0, 4];
+  console.log('Istatus utilizado para solicitudes:', istatus); // Agrega un console.log para imprimir el istatus
+
+  // Realiza la consulta a la base de datos para obtener solicitudes con istatus específico
+  const sql = 'SELECT * FROM solicitudes WHERE istatus IN (?)';
+  connection.query(sql, [istatus], (err, solicitudesResults) => {
+    if (err) {
+      console.error('Error al obtener solicitudes:', err);
+      res.status(500).json({ error: 'Error al obtener solicitudes.' });
+    } else {
+      console.log('Datos de solicitudes:', solicitudesResults); // Agrega un console.log para imprimir los datos obtenidos
+
+      // Obtiene los id_usuario de las solicitudes
+      const idUsuarios = solicitudesResults.map(solicitud => solicitud.id_usuario);
+
+      // Realiza una consulta adicional para obtener el nombre_razon_social de los usuarios
+      const usersSql = 'SELECT id, nombre_razon_social FROM usuarios WHERE id IN (?)';
+      connection.query(usersSql, [idUsuarios], (usersErr, usersResults) => {
+        if (usersErr) {
+          console.error('Error al obtener usuarios:', usersErr);
+          res.status(500).json({ error: 'Error al obtener usuarios.' });
+        } else {
+          console.log('Datos de usuarios:', usersResults); // Agrega un console.log para imprimir los datos obtenidos
+
+          // Combina los resultados de solicitudes y usuarios
+          const combinedResults = solicitudesResults.map(solicitud => {
+            const usuario = usersResults.find(user => user.id === solicitud.id_usuario);
+            return {
+              ...solicitud,
+              nombre_razon_social: usuario ? usuario.nombre_razon_social : null,
+            };
+          });
+
+          res.json(combinedResults);
+        }
+      });
+    }
+  });
+});
+
+
+
+/*
 // Endpoint para obtener solicitudes
 app.get('/fetch_requests_solicitudes', (req, res) => {
   // Lógica para obtener solicitudes desde la base de datos con istatus específico
@@ -731,6 +969,104 @@ app.get('/fetch_requests_aceptados', (req, res) => {
       }
   });
 });
+*/
+
+app.get('/fetch_requests_aceptados', (req, res) => {
+  const id_usuario = authenticatedUserId;
+
+  const sql = 'SELECT * FROM cotizaciones WHERE id_usuario = ? AND istatus = 1';
+  connection.query(sql, [id_usuario], (err, cotizacionesResults) => {
+    if (err) {
+      console.error('Error al obtener cotizaciones aceptadas:', err);
+      res.status(500).json({ error: 'Error al obtener cotizaciones aceptadas. Por favor, inténtelo de nuevo más tarde.' });
+    } else {
+      console.log('Datos de cotizaciones aceptadas:', cotizacionesResults);
+
+      // Obtiene los id_cliente de las cotizaciones
+      const idClientes = cotizacionesResults.map(cotizacion => cotizacion.id_cliente);
+
+      // Verifica si la lista de idClientes está vacía
+      if (idClientes.length === 0) {
+        res.json(cotizacionesResults);
+        return;
+      }
+
+      // Realiza una consulta adicional para obtener el nombre_razon_social de los clientes
+      const clientesSql = 'SELECT id, nombre_razon_social FROM usuarios WHERE id IN (?)';
+      connection.query(clientesSql, [idClientes], (clientesErr, clientesResults) => {
+        if (clientesErr) {
+          console.error('Error al obtener clientes:', clientesErr);
+          res.status(500).json({ error: 'Error al obtener clientes.' });
+        } else {
+          console.log('Datos de clientes:', clientesResults);
+
+          // Combina los resultados de cotizaciones y clientes
+          const combinedResults = cotizacionesResults.map(cotizacion => {
+            const cliente = clientesResults.find(cliente => cliente.id === cotizacion.id_cliente);
+            return {
+              ...cotizacion,
+              nombre_razon_social: cliente ? cliente.nombre_razon_social : null,
+            };
+          });
+
+          res.json(combinedResults);
+        }
+      });
+    }
+  });
+});
+
+
+
+app.get('/fetch_requests_rechazados', (req, res) => {
+  const id_usuario = authenticatedUserId;
+
+  const sql = 'SELECT * FROM cotizaciones WHERE id_usuario = ? AND istatus = 2';
+  connection.query(sql, [id_usuario], (err, cotizacionesResults) => {
+    if (err) {
+      console.error('Error al obtener cotizaciones aceptadas:', err);
+      res.status(500).json({ error: 'Error al obtener cotizaciones aceptadas. Por favor, inténtelo de nuevo más tarde.' });
+    } else {
+      console.log('Datos de cotizaciones aceptadas:', cotizacionesResults);
+
+      // Obtiene los id_cliente de las cotizaciones
+      const idClientes = cotizacionesResults.map(cotizacion => cotizacion.id_cliente);
+
+      // Verifica si la lista de idClientes está vacía
+      if (idClientes.length === 0) {
+        res.json(cotizacionesResults);
+        return;
+      }
+
+      // Realiza una consulta adicional para obtener el nombre_razon_social de los clientes
+      const clientesSql = 'SELECT id, nombre_razon_social FROM usuarios WHERE id IN (?)';
+      connection.query(clientesSql, [idClientes], (clientesErr, clientesResults) => {
+        if (clientesErr) {
+          console.error('Error al obtener clientes:', clientesErr);
+          res.status(500).json({ error: 'Error al obtener clientes.' });
+        } else {
+          console.log('Datos de clientes:', clientesResults);
+
+          // Combina los resultados de cotizaciones y clientes
+          const combinedResults = cotizacionesResults.map(cotizacion => {
+            const cliente = clientesResults.find(cliente => cliente.id === cotizacion.id_cliente);
+            return {
+              ...cotizacion,
+              nombre_razon_social: cliente ? cliente.nombre_razon_social : null,
+            };
+          });
+
+          res.json(combinedResults);
+        }
+      });
+    }
+  });
+});
+
+
+
+
+/*
 
 // Endpoint para obtener cotizaciones rechazadas
 app.get('/fetch_requests_rechazados', (req, res) => {
@@ -745,6 +1081,7 @@ app.get('/fetch_requests_rechazados', (req, res) => {
       }
   });
 });
+*/
 
 app.post('/fetch_request_details', (req, res) => {
   const formId = req.body.formId;
@@ -772,6 +1109,127 @@ app.post('/fetch_request_details', (req, res) => {
     }
   });
 });
+
+
+
+/*
+app.post('/cotizar', (req, res) => {
+  const cotizacionId = req.body.cotizacionId;
+
+  // Validar si el cotizacionId existe en ambas tablas
+  const validationQuery = 'SELECT COUNT(*) AS count FROM solicitudes WHERE id = ?;';
+
+  connection.query(validationQuery, [cotizacionId], (err, result) => {
+    if (err) {
+      console.error('Error al validar la existencia del id en solicitudes:', err);
+      res.status(500).json({ error: 'Error de validación. Por favor, inténtelo de nuevo más tarde.' });
+      return;
+    }
+
+    const countSolicitudes = result[0].count;
+
+    if (countSolicitudes === 0) {
+      // El id no existe en la tabla de solicitudes
+      res.status(400).json({ error: 'El id de cotización no existe en la tabla de solicitudes.' });
+      return;
+    }
+
+    // Validar en la tabla de cotizaciones
+    const validationQueryCotizaciones = 'SELECT COUNT(*) AS count FROM cotizaciones WHERE id = ?;';
+
+    connection.query(validationQueryCotizaciones, [cotizacionId], (err, result) => {
+      if (err) {
+        console.error('Error al validar la existencia del id en cotizaciones:', err);
+        res.status(500).json({ error: 'Error de validación. Por favor, inténtelo de nuevo más tarde.' });
+        return;
+      }
+
+      const countCotizaciones = result[0].count;
+
+      if (countCotizaciones === 0) {
+        // El id no existe en la tabla de cotizaciones
+        res.status(400).json({ error: 'El id de cotización no existe en la tabla de cotizaciones.' });
+        return;
+      }
+
+      // Ambos id existen, proceder con la actualización
+      const updateQuery = 'UPDATE solicitudes SET istatus = 4 WHERE id = ?';
+
+      connection.query(updateQuery, [cotizacionId], (err, result) => {
+        if (err) {
+          console.error('Error al actualizar el estado de la cotización:', err);
+          res.status(500).json({ error: 'Error al actualizar el estado de la cotización. Por favor, inténtelo de nuevo más tarde.' });
+        } else {
+          console.log('Estado de la cotización actualizado con éxito.');
+          res.json({ success: true });
+        }
+      });
+    });
+  });
+});
+
+
+*/
+
+
+
+app.post('/cotizar', (req, res) => {
+  const cotizacionId = req.body.cotizacionId;
+
+  // Realiza la lógica para cambiar el estado en la base de datos
+  const updateQuery = 'UPDATE solicitudes SET istatus = 4 WHERE id = ?';
+
+  connection.query(updateQuery, [cotizacionId], (err, result) => {
+      if (err) {
+          console.error('Error al actualizar el estado de la cotización:', err);
+          res.status(500).json({ error: 'Error al actualizar el estado de la cotización. Por favor, inténtelo de nuevo más tarde.' });
+      } else {
+          console.log('Estado de la cotización actualizado con éxito.');
+          res.json({ success: true });
+      }
+  });
+});
+
+/*
+app.post('/check_cotizacion', (req, res) => {
+  const solicitudId = req.body.cotizacionId;
+
+  // Realiza una consulta a la base de datos para verificar si hay una cotización asociada
+  const cotizacionQuery = 'SELECT * FROM cotizaciones WHERE id = ?';
+
+  connection.query(cotizacionQuery, [solicitudId], (cotizacionErr, cotizacionResults) => {
+      if (cotizacionErr) {
+          console.error('Error al verificar la cotización en la base de datos:', cotizacionErr);
+          res.status(500).json({ cotizacion_realizada: false });
+      } else {
+          const cotizacionRealizada = cotizacionResults.length > 0;
+
+          if (cotizacionRealizada) {
+              // Si hay una cotización, obtenemos el ID de la solicitud asociada
+              const solicitudId = cotizacionResults[0].id; // Este es el campo id de la cotización
+
+              // Actualiza el estado de la solicitud a 4
+              const updateSolicitudQuery = 'UPDATE solicitudes SET istatus = 4 WHERE id = ?';
+
+              connection.query(updateSolicitudQuery, [solicitudId], (updateErr, updateResults) => {
+                  if (updateErr) {
+                      console.error('Error al actualizar el estado de la solicitud en la base de datos:', updateErr);
+                      res.status(500).json({ cotizacion_realizada: false });
+                  } else {
+                      console.log('Estado de solicitud actualizado a 4:', updateResults);
+                      res.json({ cotizacion_realizada: true });
+                  }
+              });
+          } else {
+              console.log('No se encontró cotización para la solicitud:', cotizacionId);
+              res.json({ cotizacion_realizada: false });
+          }
+      }
+  });
+});
+
+*/
+
         
 
 
@@ -782,6 +1240,6 @@ app.post('/fetch_request_details', (req, res) => {
 
   
 
-app.listen(3000, () => {
+app.listen(5000, () => {
   console.log('Servidor iniciado en el puerto 3000...');
 });

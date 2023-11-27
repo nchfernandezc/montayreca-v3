@@ -11,6 +11,37 @@
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="/styles/bandeja.css">
     <title>Montayreca.</title>
+
+    <script>
+		document.addEventListener('DOMContentLoaded', function () {
+
+		try {
+			const userInfoString = localStorage.getItem('userInfo');
+			console.log('User info string:', userInfoString);
+
+			if (userInfoString) {
+			const userInfo = JSON.parse(userInfoString);
+			const { email, password } = userInfo;
+
+			console.log('Attempting login with:', email, password);
+
+			// Realiza el inicio de sesión automático
+			login(email, password)
+				.then(() => {
+				console.log('Usuario autenticado automáticamente:', email, password);
+				// Realiza acciones adicionales según la información del usuario
+				})
+				.catch((error) => {
+				console.error('Error al iniciar sesión automáticamente:', error.message);
+				console.log('Full error details:', error); // Add this line to log the full error details
+				});
+			}
+
+		} catch (error) {
+			console.error('Error en el script:', error);
+		}
+		});
+		</script>
 </head>
 
 <body>
@@ -26,8 +57,9 @@
                         class=" lead "> </ion-icon>Bandeja de entrada</a>
                 <a href="reportes.html" class="d-block text-light p-4"><ion-icon name="albums"
                         class="lead" ></ion-icon>Reportes</a>
-                <a href="../index.html" class="d-block text-light p-4 position-absolute bottom-0"><ion-icon name="person"
-                        class=" lead" ></ion-icon>Cerrar sesión</a>
+                <a href="#" id="logoutLink" class="d-block text-light p-4 position-absolute bottom-0">
+                    <ion-icon name="person" class="lead"></ion-icon>Cerrar sesión
+                    </a>
             </div>
         </div>
         <div class="w-100">
@@ -53,11 +85,13 @@
                                 <a class="nav-link fs-4 fw-bold" href="#">Rechazados</a>
                             </li>
                         </ul>
+                        <!--
                         <form class="d-flex" role="search">
                             <input class="form-control me-2" type="search" placeholder="Search"
                                 aria-label="Search">
                             <button class="btn btn-warning fs-6 " type="submit">Search</button>
                         </form>
+                        -->
                     </div>
                 </div>
             </nav>
@@ -104,22 +138,89 @@
                         <div class="categoria">
                             <div class="categoria-contenido">
                                 <p class="categoria-texto" style="font-weight: bold;">
-                                    <strong>ID de Cotización:</strong> ${item.id}<br>
+                                    ${esSolicitud ? `<strong>ID de Solicitud:</strong> ${item.id}<br>` : `<strong>ID de Cotización:</strong> ${item.id}<br>`}
+                                    ${esSolicitud ? `<strong>ID de Cliente:</strong> ${item.id_usuario}<br>` : `<strong>ID de Cliente:</strong> ${item.id_cliente}<br>`}
+                                    ${esSolicitud ? `<strong>Nombre/Razón Social:</strong> ${item.nombre_razon_social}<br>` : `<strong>Nombre/Razón Social:</strong> ${item.nombre_razon_social}<br>`}
                                     <strong>Fecha:</strong> ${fechaFormateada}<br>
                                     ${esSolicitud ? `<strong>Tipo de Requerimiento:</strong> ${item.tipo_de_requerimiento}<br>` : ''}
-                                    <strong>Descripción:</strong> ${item.descripcion}<br>
+                                    <strong>Tipo:</strong> ${item.tipo}<br>
+                                    ${item.descripcion ? `<strong>Descripción:</strong> ${item.descripcion}<br>` : ''}
                                     ${item.condiciones_pago ? `<strong>Condiciones de Pago:</strong> ${item.condiciones_pago}<br>` : ''}
                                     ${item.garantia ? `<strong>Garantía:</strong> ${item.garantia}<br>` : ''}
                                     ${tiempoEntregaFormateado ? `<strong>Tiempo de Entrega:</strong> ${tiempoEntregaFormateado}<br>` : ''}
                                     ${item.monto_total ? `<strong>Monto Total:</strong> ${item.monto_total}<br>` : ''}
-                                    ${item.istatus ? `<strong>Estado:</strong> ${item.istatus}<br>` : ''}
-                                    ${esSolicitud ? `<strong>ID de Usuario:</strong> ${item.id_usuario}<br>` : `<strong>ID de Cliente:</strong> ${item.id_cliente}<br>`}
+                                    <br>
+                                    ${item.istatus === 0
+                                        ? `<button class="btn btn-success cotizar-btn" data-id="${item.id}">Cotizar</button>`
+                                        : item.istatus === 4
+                                            ? `<button class="btn btn-danger cotizado-btn" disabled>Cotizado</button>`
+                                            : ''
+                                    }
+                                    ${esSolicitud ? `<button class="btn btn-primary ver-detalle-btn" data-id="${item.id}" data-cliente-id="${item.id_usuario}" data-cliente-nombre="${item.nombre_razon_social}">
+                                        Ver Detalle
+                                    </button>
+                                    <br>` : ''}
                                     <hr>
                                 </p>
                             </div>
                         </div>
                     `;
+                    
                 });
+                
+                const cotizarButtons = document.querySelectorAll('.cotizar-btn');
+                cotizarButtons.forEach(button => {
+                    button.addEventListener('click', handleCotizar);
+                });
+                
+
+                    // Agregar evento clic al botón para redirigir al formulario
+                    const verDetalleButtons = document.querySelectorAll('.ver-detalle-btn');
+                    verDetalleButtons.forEach(button => {
+                        button.addEventListener('click', handleVerDetalle);
+                    });
+
+                    function handleVerDetalle(event) {
+                        // Obtener datos de la solicitud desde los atributos del botón
+                        const solicitudId = event.target.dataset.id;
+                        const clienteId = event.target.dataset.clienteId;
+                        const clienteNombre = event.target.dataset.clienteNombre;
+
+                        // Redirigir al formulario con la información de la solicitud
+                        window.location.href = `formulario.html?solicitudId=${solicitudId}&clienteId=${clienteId}&clienteNombre=${clienteNombre}`;
+                    }
+
+                function handleCotizar(event) {
+                    const cotizacionId = event.target.dataset.id;
+
+                    // Obtén el botón que se hizo clic
+                    const clickedButton = event.target;
+
+                    // Envía la solicitud al servidor para cambiar el estado
+                    fetch('/cotizar', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            cotizacionId: cotizacionId,
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Actualiza el estilo y texto del botón después de la cotización
+                        clickedButton.classList.remove('btn-success');
+                        clickedButton.classList.add('btn-danger');
+                        clickedButton.innerText = 'Cotizado';
+                        clickedButton.disabled = true;
+
+                        // Puedes realizar otras acciones después de la cotización si es necesario
+                    })
+                    .catch(error => {
+                        console.error('Error al cotizar:', error);
+                    });
+                }
+
             }
     
             function cargarSolicitudes(url, esSolicitud) {
@@ -162,3 +263,132 @@
             });
         });
     </script>
+        
+<script>
+function login(email, password) {
+    // Devuelve una promesa para manejar la lógica asíncrona
+    return new Promise((resolve, reject) => {
+        // Realiza una solicitud al servidor para autenticar al usuario
+        fetch('/authenticate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+            }),
+        })
+        .then(response => {
+            // Verifica si la respuesta es exitosa (código de estado 2xx)
+            if (response.ok) {
+                // Parsea la respuesta JSON
+                return response.json();
+            } else {
+                // Rechaza la promesa con un mensaje de error
+                throw new Error('Autenticación fallida');
+            }
+        })
+        .then(data => {
+            // Lógica adicional después de una autenticación exitosa
+            console.log('Usuario autenticado:', data);
+
+            // Almacena información en localStorage después de la autenticación exitosa
+            const userInfo = {
+                email: email,
+                password: password,
+                itip: data.itip,
+                userId: data.userId,
+            };
+
+            // Almacena la información en localStorage
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+            console.log(`Usuario autenticado probando - email: ${userInfo.email}, itip: ${userInfo.itip}, userId: ${userInfo.userId}, password: ${userInfo.password}`);
+
+            resolve(data);
+        })
+        .catch(error => {
+            // Rechaza la promesa con el mensaje de error
+            reject(error.message);
+        });
+    });
+}
+    </script>
+
+    
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // ... your existing code ...
+    
+      // Attach a click event to the logout link
+      const logoutLink = document.getElementById('logoutLink');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', logout);
+      }
+    });
+    
+    function logout(event) {
+      event.preventDefault();
+    
+      // Clear user information from local storage
+    
+    
+      // Perform any additional steps for logging out on the server-side (invalidate session/token)
+    
+      // Redirect to the login page
+      window.location.href = '../index.html'; // Change the URL to your login page
+        localStorage.removeItem('userInfo');
+    }
+    </script>
+
+<!--
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // ... tu código existente ...
+
+    // Agregar eventos clic al botón para redirigir al formulario
+    const verDetalleButtons = document.querySelectorAll('.ver-detalle-btn');
+    verDetalleButtons.forEach(button => {
+        button.addEventListener('click', handleVerDetalle);
+    });
+
+    // Ejecutar automáticamente la cotización al cargar la página
+    const cotizarButtons = document.querySelectorAll('.cotizar-btn');
+    cotizarButtons.forEach(button => {
+        handleCotizarOnLoad(button);
+    });
+
+    function handleCotizarOnLoad(button) {
+        const cotizacionId = button.dataset.id;
+
+        // Envía la solicitud al servidor para cambiar el estado
+        fetch('/cotizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cotizacionId: cotizacionId,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Actualiza el estilo y texto del botón después de la cotización
+            button.classList.remove('btn-success');
+            button.classList.add('btn-danger');
+            button.innerText = 'Cotizado';
+            button.disabled = true;
+
+            // Puedes realizar otras acciones después de la cotización si es necesario
+        })
+        .catch(error => {
+            console.error('Error al cotizar:', error);
+        });
+    }
+
+    // ... más código ...
+});
+
+</script>
+-->
